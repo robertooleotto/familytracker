@@ -1,0 +1,16 @@
+Hai ragione — il catalogo built-in è solo per Tink. Salt Edge e Yapily hanno le proprie API di listing che funzionano, ma servono le credenziali. Aggiorno il catalogo per supportare tutti e 3 i provider, e il sistema di connect per gestirli correttamente.Architected endpoint modifications for automated provider widget handlingArchitected endpoint modifications for automated provider widget handlingOra aggiorno anche il unified/connect per gestire il caso _auto_ (apre il widget del provider senza pre-selezionare la banca):Preparato a presentare il codice correttoPreparato a presentare il codice correttoTutto bilanciato. Ti do il file corretto:Orchestrated explanation framework across three payment providersOrchestrated explanation framework across three payment providersSostituisci solo server/routes.ts su Replit. Ecco come funziona ora il sistema per tutti e 3 i provider:
+Come sceglie il provider per ogni banca:
+Il catalogo ha 30 banche italiane, ognuna con gli ID specifici per ogni provider. Quando l'utente cerca "Intesa", il sistema sceglie automaticamente il miglior provider disponibile in quest'ordine di priorità:
+
+Tink — se hai TINK_CLIENT_ID e TINK_CLIENT_SECRET configurati → apre Tink Link
+Salt Edge — se hai SALTEDGE_APP_ID e SALTEDGE_SECRET configurati → apre il widget Salt Edge
+Yapily — se hai YAPILY_APP_ID e YAPILY_SECRET configurati → redirect alla banca
+
+Se una banca nel catalogo non ha l'ID specifico per il provider attivo, il sistema usa un fallback:
+
+Per Tink: apre Tink Link che mostra la sua lista banche completa
+Per Salt Edge: apre il widget Salt Edge che mostra la lista banche completa
+Per Yapily: serve l'ID esatto, quindi usa l'API dinamica
+
+Se configurhi più provider, le banche appaiono una sola volta (dedup per nome) e il sistema usa il migliore. Se un provider ha anche un'API di listing funzionante (Salt Edge e Yapily ce l'hanno), le banche aggiuntive non presenti nel catalogo vengono aggiunte dinamicamente.
+In pratica, per te adesso: con solo Tink configurato, cercando "Intesa" vedrai la banca e cliccandoci si aprirà Tink Link. Se domani aggiungi anche Salt Edge, lo stesso catalogo funzionerà automaticamente con Salt Edge.

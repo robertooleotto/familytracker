@@ -1,0 +1,208 @@
+Ottima direzione — è esattamente dove l'app diventa davvero utile per la sicurezza reale. Ti spiego tutto, tecnologia per tecnologia.
+
+Le 3 categorie di rilevamento
+Sono tecnicamente molto diverse tra loro. Ognuna usa sensori diversi e ha sfide diverse.
+
+🚗 1. Rilevamento Incidente Stradale (Crash Detection)
+Come funziona: il sistema combina GPS e accelerometro — il GPS calcola la velocità dell'auto, l'accelerometro misura la forza dell'impatto. Combinando i due si valuta la severità dell'incidente potenziale. IEEE Xplore
+I sensori che usi:
+
+Accelerometro — rileva impatti bruschi (picchi > 4g)
+GPS — velocità prima e dopo l'impatto
+Giroscopio — rotazione improvvisa del veicolo
+
+L'algoritmo base:
+javascript// client/hooks/useCrashDetection.js
+// Gira nel Service Worker — anche con app in background
+
+const CRASH_THRESHOLD_G = 4.0;     // 4g = impatto violento
+const SPEED_DROP_KMH    = 20;      // calo velocità > 20 km/h
+const CONFIRM_SECONDS   = 30;      // tempo per cancellare l'alert
+
+let lastSpeed = 0;
+let lastAccel = { x: 0, y: 0, z: 0 };
+
+// Monitora accelerometro
+window.addEventListener('devicemotion', (event) => {
+  const { x, y, z } = event.accelerationIncludingGravity;
+  const magnitude = Math.sqrt(x*x + y*y + z*z) / 9.81; // in G
+
+  if (magnitude > CRASH_THRESHOLD_G) {
+    // Possibile impatto — verifica anche velocità GPS
+    checkSpeedDrop(magnitude);
+  }
+});
+
+async function checkSpeedDrop(impactG) {
+  const currentSpeed = await getCurrentSpeedKmh();
+  const speedDrop = lastSpeed - currentSpeed;
+
+  // Crash confermato se: impatto forte + calo velocità brusco
+  if (impactG > CRASH_THRESHOLD_G && speedDrop > SPEED_DROP_KMH) {
+    triggerCrashAlert(impactG, speedDrop);
+  }
+
+  lastSpeed = currentSpeed;
+}
+
+async function triggerCrashAlert(g, speedDrop) {
+  // Avvia countdown 30 secondi — l'utente può cancellare
+  startCountdown(CONFIRM_SECONDS, async () => {
+    // Dopo 30 sec senza cancellazione → SOS automatico
+    await sendEmergencyAlert({
+      type:      'crash_detection',
+      location:  await getCurrentPosition(),
+      impact_g:  g,
+      speed_drop: speedDrop,
+      timestamp: new Date().toISOString()
+    });
+  });
+}
+Falsi positivi da gestire:
+
+Buca in strada (picco accelerometro ma nessun calo velocità)
+Parcheggio brusco
+Porta dell'auto sbattuta
+
+Life360 ha questa feature nel piano Gold. L'algoritmo più affidabile aspetta: accelerazione > 4g + calo velocità > 20 km/h + stop del movimento rilevato da activity recognition API. GitHub
+
+🧓 2. Rilevamento Caduta (Fall Detection)
+Ideale per: anziani, nonni, bambini piccoli, persone con problemi di salute.
+Come funziona: i tre sensori usati sono accelerometro, giroscopio e magnetometro. I valori di accelerazione sui tre assi vengono combinati in un Single Magnitude Vector (SMV). Se l'SMV supera una soglia E l'inclinazione del telefono supera 35 gradi, viene rilevata una caduta. GitHub
+javascript// client/hooks/useFallDetection.js
+
+const FALL_SMV_THRESHOLD  = 2.5;  // G — picco durante la caduta
+const IMPACT_SMV_THRESHOLD = 3.0; // G — impatto col suolo
+const TILT_THRESHOLD_DEG  = 45;   // inclinazione post-caduta
+const INACTIVITY_SECONDS  = 3;    // immobilità dopo l'impatto
+
+let phase = 'monitoring'; // monitoring → free_fall → impact → confirm
+
+window.addEventListener('devicemotion', (event) => {
+  const { x, y, z } = event.accelerationIncludingGravity;
+  const smv = Math.sqrt(x*x + y*y + z*z) / 9.81;
+  const tilt = calculateTilt(x, y, z); // gradi
+
+  if (phase === 'monitoring') {
+    // FASE 1: Free fall — SMV scende sotto 0.5g (caduta libera)
+    if (smv < 0.5) {
+      phase = 'free_fall';
+      setTimeout(() => { if (phase === 'free_fall') phase = 'monitoring'; }, 1000);
+    }
+  }
+
+  if (phase === 'free_fall') {
+    // FASE 2: Impatto — picco SMV alto
+    if (smv > IMPACT_SMV_THRESHOLD) {
+      phase = 'impact';
+      checkPostFallInactivity(tilt);
+    }
+  }
+});
+
+function checkPostFallInactivity(tiltAtImpact) {
+  // Aspetta 3 secondi — se nessun movimento → caduta confermata
+  let movementDetected = false;
+
+  const motionCheck = setInterval(() => {
+    if (movementDetected) {
+      phase = 'monitoring'; // Falso positivo — si è rialzato subito
+      clearInterval(motionCheck);
+    }
+  }, 500);
+
+  setTimeout(() => {
+    clearInterval(motionCheck);
+    if (!movementDetected && tiltAtImpact > TILT_THRESHOLD_DEG) {
+      phase = 'monitoring';
+      triggerFallAlert();
+    }
+  }, INACTIVITY_SECONDS * 1000);
+}
+Dove mettere il telefono conta: per affidabilità maggiore il telefono dovrebbe essere in tasca dei pantaloni — la detection è più precisa rispetto a quando è in borsa o sul tavolo. GitHub
+Feature smart: profilo "nonno" attiva automaticamente la fall detection con soglie più basse.
+
+🔊 3. Rilevamento Violenza / Urla di Pericolo
+Questa è la più complessa e delicata — sia tecnicamente che eticamente.
+Come funziona: il sistema usa Mel-Frequency Cepstral Coefficients (MFCC) per analizzare l'audio in tempo reale con una sliding window. Un motore di analisi contestuale distingue urla di pericolo da urla non minacciose (es. allo stadio) per ridurre i falsi positivi. Quando uno scream viene rilevato con alta confidenza, l'alert viene inviato via Twilio con posizione, timestamp e confidence score. Journalwjarr
+Opzioni tecniche:
+Opzione A — Google ML Kit (consigliata per iniziare)
+javascript// Usa TensorFlow Lite on-device — zero dati audio al server
+// Modello pre-addestrato per classificazione audio
+
+import * as tf from '@tensorflow/tfjs';
+import { loadLayersModel } from '@tensorflow/tfjs-layers';
+
+const model = await loadLayersModel('/models/sound_classifier/model.json');
+
+async function analyzeAudio(audioBuffer) {
+  // Estrai MFCC features dall'audio
+  const mfcc = extractMFCC(audioBuffer);
+  const tensor = tf.tensor2d([mfcc]);
+
+  const prediction = model.predict(tensor);
+  const [
+    normal,    // suono normale
+    scream,    // urlo generico
+    distress,  // urlo di pericolo
+    glass_break, // vetro rotto
+  ] = prediction.dataSync();
+
+  if (distress > 0.85) {
+    // Alta confidenza — attiva SOS
+    triggerViolenceAlert('distress_scream', distress);
+  } else if (glass_break > 0.80) {
+    triggerViolenceAlert('glass_break', glass_break);
+  }
+}
+Opzione B — Audio Classification API (cloud)
+javascript// AssemblyAI o Hume AI — analisi audio cloud
+// Più preciso, ma manda audio al server (privacy issue)
+
+const response = await fetch('https://api.hume.ai/v0/batch/jobs', {
+  method: 'POST',
+  headers: { 'X-Hume-Api-Key': process.env.HUME_API_KEY },
+  body: JSON.stringify({
+    urls: [audioUrl],
+    models: { prosody: {} } // analizza emozioni nel parlato
+  })
+});
+// Rileva: fear, distress, pain nel tono della voce
+```
+
+---
+
+## ⚠️ Il problema più grande: i falsi positivi
+
+I sistemi di scream detection raggiungono accuratezza del 92-96% in laboratorio, ma in ambienti rumorosi reali l'accuratezza scende del 3-5%. 
+
+In pratica su 100 rilevamenti potresti avere 5-8 falsi positivi. Per un'app famiglia questo è inaccettabile se ogni falso positivo manda un SOS ai genitori. La soluzione è il **sistema a conferma doppia**:
+```
+Sensore rileva evento sospetto
+        ↓
+App vibra + suona allarme locale (30 secondi)
+        ↓
+"Stai bene? Premi ANNULLA se è un falso allarme"
+        ↓
+Se nessuna risposta → SOS automatico ai familiari
+
+🔒 Il problema etico — microfono sempre attivo
+Il rilevamento violenza richiede che il microfono stia ascoltando in background. Questo è molto delicato per la privacy.
+La soluzione giusta è:
+
+On-device processing — il modello ML gira sul telefono, zero audio inviato al server
+Attivazione opt-in esplicita — l'utente sceglie di accendere questa funzione
+Indicatore visibile — icona sempre visibile quando il microfono è attivo
+Mai registrare — solo analisi in tempo reale, nessun file audio salvato
+Modalità automatica — si attiva solo in certi orari o zone (es. solo di notte)
+
+
+📱 Cosa supportano iOS e Android
+FeatureiOSAndroidNoteAccelerometro background✅✅FunzionaGPS background✅ con permesso✅Richiede "always on"Microfono background❌ limitato✅ con ServiceiOS blocca moltoDeviceMotion API (web)✅ con permesso✅Per PWAFall detection nativa✅ Apple Watch✅ Pixel 4+Solo hardware Apple/Google
+Nota importante su iOS: Apple ha la fall detection nativa sull'Apple Watch — potresti integrarti con HealthKit per leggere i dati di fall detection di Apple invece di reimplementarla. Molto più affidabile.
+
+La roadmap consigliata per Arc
+Sprint 4 — Crash detection (più semplice, solo accelerometro+GPS, nessun problema privacy)
+Sprint 5 — Fall detection (per il profilo nonni/anziani, killer feature differenziante)
+Sprint 6 — Scream/violence detection (solo on-device, opt-in esplicito, con countdown annullabile)
+Vuoi che faccia un PDF specifico per Replit anche su questo modulo di sicurezza?

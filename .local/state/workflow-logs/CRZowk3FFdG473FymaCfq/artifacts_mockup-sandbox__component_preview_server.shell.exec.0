@@ -1,0 +1,66 @@
+
+> mockup-sandbox@0.0.0 dev
+> vite --config vite.config.ts --host 0.0.0.0
+
+[1G[0K
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J
+  [32m[1mVITE[22m v7.3.1[39m  [2mready in [0m[1m1745[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m23636[22m/__mockup/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://172.31.72.2:[1m23636[22m/__mockup/[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:08:56 PM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: [33mDuplicate "style" attribute in JSX element[33m
+108 |            <div data-replit-metadata="artifacts/mockup-sandbox/src/components/mockups/colocation/CoLocationPills.tsx:1...
+109 |            className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-semibold"
+110 |            style={{ background: "rgba(232,83,58,.25)", color: CORAL }}>
+    |            ^
+111 |              ❤️ Insieme · Casa
+112 |            </div>
+[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36m/home/runner/workspace/artifacts/mockup-sandbox/src/components/mockups/colocation/CoLocationPills.tsx[39m

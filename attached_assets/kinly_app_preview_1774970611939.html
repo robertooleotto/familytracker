@@ -1,0 +1,562 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --p:#E8533A; --pd:#B83A23; --pl:#FEF0ED;
+  --navy:#1A2535; --navy2:#2D3D52;
+  --bg:#F7F5F2; --card:#fff; --sep:#E8E6E1;
+  --t1:#1A2535; --t2:#4A5568; --t3:#8896A8;
+  --green:#2E7D32; --green-bg:#E8F5E9;
+  --blue:#1565C0; --blue-bg:#E3F2FD;
+  --orange:#E65100; --orange-bg:#FFF3E0;
+  --purple:#6A1B9A; --purple-bg:#F3E5F5;
+  --teal:#00838F; --teal-bg:#E0F7FA;
+}
+body{font-family:'DM Sans',sans-serif;background:#E8E6E1;display:flex;flex-direction:column;align-items:center;padding:24px 16px 48px;gap:16px;}
+
+/* SCREEN SWITCHER */
+.switcher{display:flex;gap:6px;background:rgba(255,255,255,.7);padding:5px;border-radius:999px;backdrop-filter:blur(8px);}
+.sw-btn{padding:7px 16px;border-radius:999px;border:none;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;color:var(--t2);background:transparent;transition:all .18s;}
+.sw-btn.on{background:var(--p);color:#fff;box-shadow:0 2px 10px rgba(232,83,58,.3);}
+
+/* PHONE */
+.phone-wrap{width:100%;max-width:390px;background:var(--navy);border-radius:44px;padding:10px;box-shadow:0 24px 60px rgba(0,0,0,.3),0 8px 20px rgba(0,0,0,.2);}
+.phone{background:var(--bg);border-radius:36px;overflow:hidden;min-height:780px;display:flex;flex-direction:column;position:relative;}
+.screen{display:none;flex-direction:column;flex:1;}
+.screen.active{display:flex;}
+
+/* STATUS */
+.status{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 0;height:46px;}
+.s-time{font-size:15px;font-weight:600;color:var(--t1);letter-spacing:-.3px;}
+.s-icons{display:flex;align-items:center;gap:5px;color:var(--t1);}
+
+/* SHARED */
+.page-pad{padding:0 18px;}
+.section-title{font-size:22px;font-weight:700;color:var(--t1);letter-spacing:-.4px;margin-bottom:4px;}
+.section-sub{font-size:14px;color:var(--t3);margin-bottom:16px;}
+.card{background:var(--card);border-radius:18px;overflow:hidden;border:.5px solid var(--sep);}
+.card-pad{padding:14px 16px;}
+.row{display:flex;align-items:center;gap:10px;}
+.col{display:flex;flex-direction:column;gap:2px;}
+.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:500;}
+
+/* BOTTOM TAB */
+.tab-bar{background:rgba(247,245,242,.92);backdrop-filter:blur(16px);border-top:.5px solid var(--sep);display:flex;justify-content:space-around;padding:8px 0 18px;margin-top:auto;}
+.tab{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:4px 12px;}
+.tab-ico{font-size:22px;line-height:1;}
+.tab-lbl{font-size:10px;font-weight:500;}
+.tab.on .tab-ico{filter:none;}
+.tab.on .tab-lbl{color:var(--p);}
+.tab:not(.on) .tab-lbl{color:var(--t3);}
+
+/* HEADER with coral */
+.header-coral{background:var(--navy);padding:16px 18px 20px;}
+.header-coral .s-time{color:#fff;}
+.header-coral .s-icons{color:#fff;}
+</style>
+
+<div class="switcher">
+  <button class="sw-btn on" onclick="show('home',this)">Home</button>
+  <button class="sw-btn" onclick="show('map',this)">Mappa</button>
+  <button class="sw-btn" onclick="show('calendar',this)">Calendario</button>
+  <button class="sw-btn" onclick="show('finance',this)">Finanze</button>
+  <button class="sw-btn" onclick="show('safety',this)">Safety</button>
+</div>
+
+<div class="phone-wrap">
+<div class="phone">
+
+<!-- ══════════ HOME ══════════ -->
+<div class="screen active" id="screen-home">
+  <div style="background:var(--navy);padding:14px 22px 0 22px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding-top:0;">
+      <span style="font-size:15px;font-weight:600;color:#fff;letter-spacing:-.3px;">9:41</span>
+      <div style="display:flex;gap:5px;color:#fff;font-size:13px;">▲▲▲ ◉ ▓</div>
+    </div>
+  </div>
+
+  <!-- HERO HEADER -->
+  <div style="background:var(--navy);padding:16px 18px 24px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <p style="font-size:13px;color:rgba(255,255,255,.5);font-weight:400;margin-bottom:2px;">Buongiorno</p>
+        <p style="font-size:26px;font-weight:700;color:#fff;letter-spacing:-.5px;line-height:1.1;">Famiglia<br>Bianchi 👋</p>
+      </div>
+      <div style="width:44px;height:44px;border-radius:50%;background:var(--p);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;box-shadow:0 4px 14px rgba(232,83,58,.4);">R</div>
+    </div>
+
+    <!-- MEMBER PILLS -->
+    <div style="display:flex;gap:8px;margin-top:18px;overflow-x:auto;padding-bottom:2px;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;">
+        <div style="width:52px;height:52px;border-radius:50%;background:var(--p);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;border:3px solid rgba(255,255,255,.2);">R</div>
+        <span style="font-size:11px;color:rgba(255,255,255,.7);">Roberto</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;">
+        <div style="width:52px;height:52px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;border:3px solid rgba(255,255,255,.15);">M</div>
+        <span style="font-size:11px;color:rgba(255,255,255,.7);">Marco</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;">
+        <div style="width:52px;height:52px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;border:3px solid rgba(255,255,255,.15);">S</div>
+        <span style="font-size:11px;color:rgba(255,255,255,.7);">Sofia</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;">
+        <div style="width:52px;height:52px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;border:3px solid rgba(255,255,255,.15);">L</div>
+        <span style="font-size:11px;color:rgba(255,255,255,.7);">Laura</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUICK STATUS BAR -->
+  <div style="background:var(--p);padding:10px 18px;display:flex;gap:16px;align-items:center;">
+    <span style="font-size:13px;color:#fff;font-weight:500;">✓ Tutti a casa · 20:14</span>
+    <div style="margin-left:auto;background:rgba(255,255,255,.2);padding:4px 12px;border-radius:999px;font-size:12px;color:#fff;font-weight:500;">Vedi mappa</div>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:12px;">
+
+    <!-- AI SUMMARY CARD -->
+    <div style="background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 100%);border-radius:18px;padding:16px;">
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <div style="width:32px;height:32px;border-radius:10px;background:var(--p);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">✦</div>
+        <div>
+          <p style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:4px;letter-spacing:.04em;text-transform:uppercase;font-weight:500;">Riepilogo serale · Kinly AI</p>
+          <p style="font-size:14px;color:#fff;line-height:1.55;font-weight:400;">Sofia è rientrata dalla gita alle 17:45 come previsto. Marco ha allenamento domani alle 16:30. Ricorda: bollo auto in scadenza tra 8 giorni.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- OGGI -->
+    <div class="card">
+      <div style="padding:12px 16px 4px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:16px;font-weight:700;color:var(--t1);">Oggi</span>
+        <span style="font-size:13px;color:var(--p);font-weight:500;">+ Aggiungi</span>
+      </div>
+      <div>
+        <div style="padding:10px 16px;display:flex;align-items:center;gap:12px;border-bottom:.5px solid var(--sep);">
+          <div style="width:4px;height:40px;border-radius:2px;background:var(--p);flex-shrink:0;"></div>
+          <div style="flex:1;">
+            <p style="font-size:15px;font-weight:600;color:var(--t1);">Dentista Sofia</p>
+            <p style="font-size:13px;color:var(--t3);">09:00 · 30 min</p>
+          </div>
+          <div class="avatar" style="background:var(--green);width:28px;height:28px;font-size:12px;">S</div>
+        </div>
+        <div style="padding:10px 16px;display:flex;align-items:center;gap:12px;">
+          <div style="width:4px;height:40px;border-radius:2px;background:var(--blue);flex-shrink:0;"></div>
+          <div style="flex:1;">
+            <p style="font-size:15px;font-weight:600;color:var(--t1);">Allenamento calcio</p>
+            <p style="font-size:13px;color:var(--t3);">16:30 · 1h 30m</p>
+          </div>
+          <div class="avatar" style="background:var(--blue);width:28px;height:28px;font-size:12px;">M</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUICK ACTIONS -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="card card-pad" style="display:flex;align-items:center;gap:10px;">
+        <div style="width:38px;height:38px;border-radius:12px;background:var(--pl);display:flex;align-items:center;justify-content:center;font-size:18px;">🛒</div>
+        <div><p style="font-size:14px;font-weight:600;color:var(--t1);">Lista spesa</p><p style="font-size:12px;color:var(--t3);">3 articoli</p></div>
+      </div>
+      <div class="card card-pad" style="display:flex;align-items:center;gap:10px;">
+        <div style="width:38px;height:38px;border-radius:12px;background:var(--orange-bg);display:flex;align-items:center;justify-content:center;font-size:18px;">💊</div>
+        <div><p style="font-size:14px;font-weight:600;color:var(--t1);">Farmaci</p><p style="font-size:12px;color:var(--orange);">1 da prendere</p></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab on"><div class="tab-ico">⊞</div><div class="tab-lbl">Home</div></div>
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">◎</div><div class="tab-lbl">Mappa</div></div>
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">▦</div><div class="tab-lbl">Calendario</div></div>
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">€</div><div class="tab-lbl">Finanze</div></div>
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">⊙</div><div class="tab-lbl">Profilo</div></div>
+  </div>
+</div>
+
+
+<!-- ══════════ MAPPA ══════════ -->
+<div class="screen" id="screen-map">
+  <div style="position:relative;flex:1;background:#E8F0DC;overflow:hidden;">
+
+    <!-- FAKE MAP BG -->
+    <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 390 600" preserveAspectRatio="xMidYMid slice">
+      <rect width="390" height="600" fill="#EDF2E4"/>
+      <!-- strade -->
+      <path d="M0 200 L390 200" stroke="#fff" stroke-width="12" fill="none"/>
+      <path d="M0 350 L390 350" stroke="#fff" stroke-width="8" fill="none"/>
+      <path d="M120 0 L120 600" stroke="#fff" stroke-width="10" fill="none"/>
+      <path d="M260 0 L260 600" stroke="#fff" stroke-width="8" fill="none"/>
+      <path d="M0 480 L390 480" stroke="#fff" stroke-width="6" fill="none"/>
+      <!-- blocchi -->
+      <rect x="140" y="220" width="100" height="110" rx="6" fill="#D8E6C8" stroke="#C8D8B8" stroke-width=".5"/>
+      <rect x="20" y="220" width="80" height="60" rx="6" fill="#D8E6C8" stroke="#C8D8B8" stroke-width=".5"/>
+      <rect x="280" y="220" width="90" height="110" rx="6" fill="#D8E6C8" stroke="#C8D8B8" stroke-width=".5"/>
+      <rect x="140" y="360" width="100" height="100" rx="6" fill="#D8E6C8" stroke="#C8D8B8" stroke-width=".5"/>
+      <rect x="20" y="360" width="80" height="100" rx="6" fill="#D0E8F0" stroke="#B8D8E8" stroke-width=".5"/>
+      <rect x="280" y="360" width="90" height="100" rx="6" fill="#D8E6C8" stroke="#C8D8B8" stroke-width=".5"/>
+    </svg>
+
+    <!-- TOP BAR -->
+    <div style="position:absolute;top:0;left:0;right:0;background:var(--navy);padding:14px 18px 14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-size:15px;font-weight:600;color:#fff;">9:41</span>
+        <div style="display:flex;gap:5px;color:#fff;font-size:12px;">▲▲▲ ◉ ▓</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <p style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-.4px;">Mappa</p>
+        <div style="background:rgba(255,255,255,.15);padding:6px 14px;border-radius:999px;font-size:13px;color:#fff;font-weight:500;">Tutti ✓</div>
+      </div>
+    </div>
+
+    <!-- MEMBER PINS -->
+    <!-- Roberto -->
+    <div style="position:absolute;top:240px;left:165px;display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <div style="background:var(--p);color:#fff;font-weight:700;font-size:13px;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2.5px solid #fff;box-shadow:0 3px 12px rgba(232,83,58,.5);">R</div>
+      <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:8px solid var(--p);margin-top:-2px;"></div>
+      <div style="background:white;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600;color:var(--t1);box-shadow:0 2px 6px rgba(0,0,0,.1);">Casa</div>
+    </div>
+    <!-- Marco -->
+    <div style="position:absolute;top:140px;left:290px;display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <div style="background:var(--blue);color:#fff;font-weight:700;font-size:13px;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2.5px solid #fff;box-shadow:0 3px 12px rgba(21,101,192,.4);">M</div>
+      <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:8px solid var(--blue);margin-top:-2px;"></div>
+      <div style="background:white;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600;color:var(--t1);box-shadow:0 2px 6px rgba(0,0,0,.1);">Palestra</div>
+    </div>
+    <!-- Sofia -->
+    <div style="position:absolute;top:300px;left:50px;display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <div style="background:var(--green);color:#fff;font-weight:700;font-size:13px;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2.5px solid #fff;box-shadow:0 3px 12px rgba(46,125,50,.4);">S</div>
+      <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:8px solid var(--green);margin-top:-2px;"></div>
+      <div style="background:white;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600;color:var(--t1);box-shadow:0 2px 6px rgba(0,0,0,.1);">Scuola</div>
+    </div>
+
+    <!-- SOS BUTTON -->
+    <div style="position:absolute;bottom:140px;right:18px;">
+      <div style="width:52px;height:52px;border-radius:50%;background:#C62828;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;box-shadow:0 4px 18px rgba(198,40,40,.5);letter-spacing:.04em;">SOS</div>
+    </div>
+
+    <!-- BOTTOM CARD -->
+    <div style="position:absolute;bottom:68px;left:16px;right:16px;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-radius:18px;padding:14px 16px;box-shadow:0 4px 20px rgba(0,0,0,.12);">
+      <p style="font-size:12px;color:var(--t3);margin-bottom:8px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;">Stato famiglia</p>
+      <div style="display:flex;gap:12px;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--green);"></div>
+          <span style="font-size:13px;color:var(--t1);font-weight:500;">Roberto · Casa</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--blue);"></div>
+          <span style="font-size:13px;color:var(--t1);font-weight:500;">Marco · Palestra</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:6px;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--green);"></div>
+          <span style="font-size:13px;color:var(--t1);font-weight:500;">Sofia · Scuola</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--purple);"></div>
+          <span style="font-size:13px;color:var(--t1);font-weight:500;">Laura · Casa</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">⊞</div><div class="tab-lbl" style="color:var(--t3);">Home</div></div>
+    <div class="tab on"><div class="tab-ico">◎</div><div class="tab-lbl">Mappa</div></div>
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">▦</div><div class="tab-lbl" style="color:var(--t3);">Calendario</div></div>
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">€</div><div class="tab-lbl" style="color:var(--t3);">Finanze</div></div>
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">⊙</div><div class="tab-lbl" style="color:var(--t3);">Profilo</div></div>
+  </div>
+</div>
+
+
+<!-- ══════════ CALENDARIO ══════════ -->
+<div class="screen" id="screen-calendar">
+  <div style="background:var(--navy);padding:14px 18px 0;">
+    <div style="display:flex;justify-content:space-between;"><span style="font-size:15px;font-weight:600;color:#fff;">9:41</span><div style="color:#fff;font-size:12px;">▲▲▲ ◉ ▓</div></div>
+  </div>
+  <div style="background:var(--navy);padding:12px 18px 20px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;">
+      <div><span style="font-size:28px;font-weight:700;color:#fff;letter-spacing:-.5px;">Marzo</span><span style="font-size:28px;font-weight:300;color:rgba(255,255,255,.5);letter-spacing:-.5px;"> 2026</span></div>
+      <div style="display:flex;gap:8px;">
+        <div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;color:var(--p);font-size:18px;font-weight:600;">‹</div>
+        <div style="height:34px;padding:0 14px;border-radius:17px;background:rgba(255,255,255,.12);display:flex;align-items:center;color:var(--p);font-size:14px;font-weight:500;">Oggi</div>
+        <div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;color:var(--p);font-size:18px;font-weight:600;">›</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:var(--bg);flex:1;padding:0 12px;">
+    <!-- WEEKDAY HEADER -->
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);padding:8px 0 4px;">
+      <div style="text-align:center;font-size:11px;font-weight:500;color:#E8533A;letter-spacing:.2px;">D</div>
+      <div style="text-align:center;font-size:11px;font-weight:500;color:var(--t3);letter-spacing:.2px;">L</div>
+      <div style="text-align:center;font-size:11px;font-weight:500;color:var(--t3);letter-spacing:.2px;">M</div>
+      <div style="text-align:center;font-size:11px;font-weight:500;color:var(--t3);letter-spacing:.2px;">M</div>
+      <div style="text-align:center;font-size:11px;font-weight:500;color:var(--t3);letter-spacing:.2px;">G</div>
+      <div style="text-align:center;font-size:11px;font-weight:500;color:var(--t3);letter-spacing:.2px;">V</div>
+      <div style="text-align:center;font-size:11px;font-weight:500;color:var(--t3);letter-spacing:.2px;">S</div>
+    </div>
+    <!-- DAYS GRID — simplified march 2026 -->
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:0;">
+      <!-- row 1: 1-7 (1=sun) -->
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:400;color:#E8533A;margin:0 auto;">1</div></div>
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t1);margin:0 auto;">2</div></div>
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t1);margin:0 auto;">3</div></div>
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t1);margin:0 auto;">4</div></div>
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t1);margin:0 auto;">5</div></div>
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t1);margin:0 auto;">6</div></div>
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t1);margin:0 auto;">7</div></div>
+      <!-- row 2 -->
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:#E8533A;margin:0 auto;">8</div></div>
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t1);margin:0 auto;">9</div></div>
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t1);margin:0 auto;">10</div></div>
+      <!-- TODAY -->
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;border-radius:50%;background:var(--p);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;margin:0 auto;box-shadow:0 0 0 4px rgba(232,83,58,.2);">11</div></div>
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t1);margin:0 auto;">12</div></div>
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t1);margin:0 auto;">13</div></div>
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t1);margin:0 auto;">14</div></div>
+      <!-- row 3 -->
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:#E8533A;margin:0 auto;">15</div></div>
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t1);margin:0 auto;">16</div></div>
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t1);margin:0 auto;">17</div></div>
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t1);margin:0 auto;">18</div></div>
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t1);margin:0 auto;">19</div></div>
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t1);margin:0 auto;">20</div></div>
+      <div style="text-align:center;padding:3px 0;"><div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t1);margin:0 auto;">21</div></div>
+    </div>
+
+    <!-- DOTS UNDER DAYS WITH EVENTS -->
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);margin-top:-6px;margin-bottom:8px;">
+      <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+      <div></div><div></div><div></div>
+      <div style="display:flex;justify-content:center;gap:2px;">
+        <div style="width:5px;height:5px;border-radius:50%;background:var(--p);"></div>
+        <div style="width:5px;height:5px;border-radius:50%;background:var(--blue);"></div>
+      </div>
+      <div></div><div></div><div></div>
+    </div>
+
+    <div style="height:.5px;background:var(--sep);margin:4px 0 12px;"></div>
+
+    <!-- EVENTS FOR TODAY -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <span style="font-size:18px;font-weight:700;color:var(--t1);">Oggi · 11 Marzo</span>
+      <span style="font-size:13px;color:var(--p);font-weight:500;">+ Nuovo</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:9px;">
+      <div style="background:var(--card);border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:center;border:.5px solid var(--sep);">
+        <div style="width:4px;height:44px;border-radius:2px;background:var(--p);flex-shrink:0;"></div>
+        <div style="min-width:52px;"><p style="font-size:13px;font-weight:500;color:var(--t3);">09:00</p><p style="font-size:11px;color:var(--t3);">30 min</p></div>
+        <div style="flex:1;"><p style="font-size:15px;font-weight:600;color:var(--t1);">Dentista Sofia</p><div style="display:flex;align-items:center;gap:4px;margin-top:2px;"><div class="avatar" style="width:16px;height:16px;font-size:8px;background:var(--green);">S</div><span style="font-size:12px;color:var(--t3);">Sofia</span></div></div>
+        <span style="color:var(--t3);font-size:18px;">›</span>
+      </div>
+      <div style="background:var(--card);border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:center;border:.5px solid var(--sep);">
+        <div style="width:4px;height:44px;border-radius:2px;background:var(--blue);flex-shrink:0;"></div>
+        <div style="min-width:52px;"><p style="font-size:13px;font-weight:500;color:var(--t3);">16:30</p><p style="font-size:11px;color:var(--t3);">1h 30m</p></div>
+        <div style="flex:1;"><p style="font-size:15px;font-weight:600;color:var(--t1);">Allenamento calcio</p><div style="display:flex;align-items:center;gap:4px;margin-top:2px;"><div class="avatar" style="width:16px;height:16px;font-size:8px;background:var(--blue);">M</div><span style="font-size:12px;color:var(--t3);">Marco</span></div></div>
+        <span style="color:var(--t3);font-size:18px;">›</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAB -->
+  <div style="position:absolute;bottom:80px;right:18px;width:52px;height:52px;border-radius:50%;background:var(--p);display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;box-shadow:0 4px 18px rgba(232,83,58,.4);">+</div>
+
+  <div class="tab-bar">
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">⊞</div><div class="tab-lbl" style="color:var(--t3);">Home</div></div>
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">◎</div><div class="tab-lbl" style="color:var(--t3);">Mappa</div></div>
+    <div class="tab on"><div class="tab-ico">▦</div><div class="tab-lbl">Calendario</div></div>
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">€</div><div class="tab-lbl" style="color:var(--t3);">Finanze</div></div>
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">⊙</div><div class="tab-lbl" style="color:var(--t3);">Profilo</div></div>
+  </div>
+</div>
+
+
+<!-- ══════════ FINANZE ══════════ -->
+<div class="screen" id="screen-finance">
+  <div style="background:var(--navy);padding:14px 18px 0;">
+    <div style="display:flex;justify-content:space-between;"><span style="font-size:15px;font-weight:600;color:#fff;">9:41</span><div style="color:#fff;font-size:12px;">▲▲▲ ◉ ▓</div></div>
+  </div>
+  <div style="background:var(--navy);padding:12px 18px 24px;">
+    <p style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-.4px;margin-bottom:16px;">Finanze</p>
+    <!-- SCORE CARD -->
+    <div style="background:rgba(255,255,255,.08);border-radius:18px;padding:16px;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <p style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em;font-weight:500;">Score mese</p>
+        <p style="font-size:42px;font-weight:700;color:#fff;letter-spacing:-.5px;line-height:1;">74<span style="font-size:20px;font-weight:300;opacity:.6;">/100</span></p>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <span class="chip" style="background:var(--green-bg);color:var(--green);">✓ Budget OK</span>
+          <span class="chip" style="background:var(--orange-bg);color:var(--orange);">⚠ +3 abbonamenti</span>
+        </div>
+      </div>
+      <div style="width:72px;height:72px;border-radius:50%;border:5px solid rgba(255,255,255,.15);border-top-color:var(--p);display:flex;align-items:center;justify-content:center;">
+        <span style="font-size:20px;font-weight:700;color:#fff;">74</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:12px;background:var(--bg);">
+
+    <!-- BUDGET -->
+    <div class="card card-pad">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <span style="font-size:16px;font-weight:700;color:var(--t1);">Budget Marzo</span>
+        <span style="font-size:13px;color:var(--p);font-weight:500;">2.340 / 3.000€</span>
+      </div>
+      <div style="height:8px;border-radius:4px;background:var(--sep);overflow:hidden;margin-bottom:8px;">
+        <div style="width:78%;height:100%;border-radius:4px;background:var(--p);"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span style="font-size:12px;color:var(--t3);">Speso: 2.340€</span>
+        <span style="font-size:12px;color:var(--green);font-weight:500;">Rimane: 660€</span>
+      </div>
+    </div>
+
+    <!-- CATEGORIE -->
+    <div>
+      <p style="font-size:16px;font-weight:700;color:var(--t1);margin-bottom:10px;">Per categoria</p>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="card card-pad" style="padding:12px 14px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:38px;height:38px;border-radius:12px;background:#FFF3E0;display:flex;align-items:center;justify-content:center;font-size:18px;">🛒</div>
+            <div style="flex:1;"><p style="font-size:14px;font-weight:600;color:var(--t1);">Alimentari</p>
+            <div style="height:4px;border-radius:2px;background:var(--sep);margin-top:6px;overflow:hidden;"><div style="width:65%;height:100%;background:var(--orange);border-radius:2px;"></div></div></div>
+            <span style="font-size:14px;font-weight:600;color:var(--t1);">487€</span>
+          </div>
+        </div>
+        <div class="card card-pad" style="padding:12px 14px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:38px;height:38px;border-radius:12px;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;font-size:18px;">📱</div>
+            <div style="flex:1;"><p style="font-size:14px;font-weight:600;color:var(--t1);">Abbonamenti</p>
+            <div style="height:4px;border-radius:2px;background:var(--sep);margin-top:6px;overflow:hidden;"><div style="width:40%;height:100%;background:var(--blue);border-radius:2px;"></div></div></div>
+            <span style="font-size:14px;font-weight:600;color:var(--t1);">142€</span>
+          </div>
+        </div>
+        <div class="card card-pad" style="padding:12px 14px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:38px;height:38px;border-radius:12px;background:var(--green-bg);display:flex;align-items:center;justify-content:center;font-size:18px;">🏥</div>
+            <div style="flex:1;"><p style="font-size:14px;font-weight:600;color:var(--t1);">Salute</p>
+            <div style="height:4px;border-radius:2px;background:var(--sep);margin-top:6px;overflow:hidden;"><div style="width:25%;height:100%;background:var(--green);border-radius:2px;"></div></div></div>
+            <span style="font-size:14px;font-weight:600;color:var(--t1);">89€</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BANCA CONNESSA -->
+    <div class="card card-pad" style="display:flex;align-items:center;gap:12px;">
+      <div style="width:38px;height:38px;border-radius:12px;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--p);">IN</div>
+      <div style="flex:1;"><p style="font-size:14px;font-weight:600;color:var(--t1);">Intesa Sanpaolo</p><p style="font-size:12px;color:var(--green);font-weight:500;">● Connessa · Aggiornata ora</p></div>
+      <span style="font-size:18px;color:var(--t3);">›</span>
+    </div>
+
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">⊞</div><div class="tab-lbl" style="color:var(--t3);">Home</div></div>
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">◎</div><div class="tab-lbl" style="color:var(--t3);">Mappa</div></div>
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">▦</div><div class="tab-lbl" style="color:var(--t3);">Calendario</div></div>
+    <div class="tab on"><div class="tab-ico">€</div><div class="tab-lbl">Finanze</div></div>
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">⊙</div><div class="tab-lbl" style="color:var(--t3);">Profilo</div></div>
+  </div>
+</div>
+
+
+<!-- ══════════ SAFETY ══════════ -->
+<div class="screen" id="screen-safety">
+  <div style="background:var(--navy);padding:14px 18px 0;">
+    <div style="display:flex;justify-content:space-between;"><span style="font-size:15px;font-weight:600;color:#fff;">9:41</span><div style="color:#fff;font-size:12px;">▲▲▲ ◉ ▓</div></div>
+  </div>
+  <div style="background:var(--navy);padding:12px 18px 24px;">
+    <p style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-.4px;margin-bottom:4px;">Safety</p>
+    <p style="font-size:14px;color:rgba(255,255,255,.5);">Tutti al sicuro · Nessun alert</p>
+    <div style="margin-top:14px;display:flex;gap:8px;">
+      <span class="chip" style="background:rgba(46,125,50,.25);color:#81C784;font-size:13px;">● Crash detection ON</span>
+      <span class="chip" style="background:rgba(46,125,50,.25);color:#81C784;font-size:13px;">● Fall detection ON</span>
+    </div>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:12px;background:var(--bg);">
+
+    <!-- SOS BUTTON BIG -->
+    <div style="background:#C62828;border-radius:20px;padding:22px;display:flex;align-items:center;gap:16px;box-shadow:0 4px 20px rgba(198,40,40,.3);">
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;letter-spacing:.04em;border:2px solid rgba(255,255,255,.3);">SOS</div>
+      <div>
+        <p style="font-size:17px;font-weight:700;color:#fff;margin-bottom:2px;">Emergenza</p>
+        <p style="font-size:13px;color:rgba(255,255,255,.7);">Tieni premuto 3 secondi per attivare</p>
+      </div>
+    </div>
+
+    <!-- DETECTION STATUS -->
+    <div class="card">
+      <div style="padding:12px 16px;border-bottom:.5px solid var(--sep);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:16px;font-weight:700;color:var(--t1);">Rilevamento automatico</span>
+      </div>
+      <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:.5px solid var(--sep);">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:20px;">🚗</span>
+          <div><p style="font-size:14px;font-weight:600;color:var(--t1);">Incidente stradale</p><p style="font-size:12px;color:var(--t3);">Accelerometro + GPS</p></div>
+        </div>
+        <div style="width:46px;height:28px;border-radius:14px;background:var(--p);position:relative;"><div style="width:24px;height:24px;border-radius:50%;background:#fff;position:absolute;top:2px;right:2px;box-shadow:0 1px 4px rgba(0,0,0,.2);"></div></div>
+      </div>
+      <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:.5px solid var(--sep);">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:20px;">🧓</span>
+          <div><p style="font-size:14px;font-weight:600;color:var(--t1);">Rilevamento caduta</p><p style="font-size:12px;color:var(--t3);">Giroscopio + SMV</p></div>
+        </div>
+        <div style="width:46px;height:28px;border-radius:14px;background:var(--p);position:relative;"><div style="width:24px;height:24px;border-radius:50%;background:#fff;position:absolute;top:2px;right:2px;box-shadow:0 1px 4px rgba(0,0,0,.2);"></div></div>
+      </div>
+      <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:20px;">🔊</span>
+          <div><p style="font-size:14px;font-weight:600;color:var(--t1);">Rilevamento urla</p><p style="font-size:12px;color:var(--orange);">⚠ Richiede microfono</p></div>
+        </div>
+        <div style="width:46px;height:28px;border-radius:14px;background:var(--sep);position:relative;"><div style="width:24px;height:24px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;box-shadow:0 1px 4px rgba(0,0,0,.2);"></div></div>
+      </div>
+    </div>
+
+    <!-- EMERGENCY PLAN -->
+    <div class="card card-pad" style="display:flex;align-items:center;gap:12px;">
+      <div style="width:42px;height:42px;border-radius:14px;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;font-size:20px;">📋</div>
+      <div style="flex:1;">
+        <p style="font-size:15px;font-weight:600;color:var(--t1);">Piano di emergenza</p>
+        <p style="font-size:12px;color:var(--t3);">Punto ritrovo · Contatti · Procedure</p>
+      </div>
+      <span style="background:var(--green-bg);color:var(--green);font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;">Offline</span>
+    </div>
+
+    <!-- SONO AL SICURO -->
+    <div style="background:var(--green);border-radius:18px;padding:18px;display:flex;align-items:center;gap:14px;">
+      <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px;">✓</div>
+      <div>
+        <p style="font-size:16px;font-weight:700;color:#fff;">Sono al sicuro</p>
+        <p style="font-size:13px;color:rgba(255,255,255,.75);">Invia a tutti i contatti in 1 tap</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">⊞</div><div class="tab-lbl" style="color:var(--t3);">Home</div></div>
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">◎</div><div class="tab-lbl" style="color:var(--t3);">Mappa</div></div>
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">▦</div><div class="tab-lbl" style="color:var(--t3);">Calendario</div></div>
+    <div class="tab"><div class="tab-ico" style="color:var(--t3);">€</div><div class="tab-lbl" style="color:var(--t3);">Finanze</div></div>
+    <div class="tab on"><div class="tab-ico">⊙</div><div class="tab-lbl">Safety</div></div>
+  </div>
+</div>
+
+</div><!-- /phone -->
+</div><!-- /phone-wrap -->
+
+<script>
+function show(id, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sw-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById('screen-'+id).classList.add('active');
+  btn.classList.add('on');
+}
+</script>
