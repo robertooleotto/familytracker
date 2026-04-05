@@ -66,7 +66,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 import {
   LayoutDashboard, MapPin, MessageCircle, Calendar, ShoppingCart,
   Shield, Pill, Home, Star, Settings, X, Wallet,
-  PawPrint, Car, Phone, UtensilsCrossed, Sparkles, GraduationCap, ShieldCheck, ChefHat, FolderOpen, Heart, BookOpen, Map, Bot,
+  PawPrint, Car, Phone, UtensilsCrossed, Sparkles, GraduationCap, ShieldCheck, ChefHat, FolderOpen, Heart, BookOpen, Map, Bot, LogOut,
 } from "lucide-react";
 
 const MAIN_TABS = [
@@ -155,7 +155,7 @@ const PAGE_TITLES: Record<string, string> = {
 };
 
 // ─── More Sheet (slide-up) ────────────────────────────────────────────────────
-function MoreSheet({ onSelect, onClose }: { onSelect: (id: string) => void; onClose: () => void }) {
+function MoreSheet({ onSelect, onClose, onLogout }: { onSelect: (id: string) => void; onClose: () => void; onLogout: () => void }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -239,8 +239,8 @@ function MoreSheet({ onSelect, onClose }: { onSelect: (id: string) => void; onCl
             </div>
           ))}
 
-          {/* Impostazioni — separato in fondo */}
-          <div className="border-t border-slate-100 pt-3 pb-4">
+          {/* Impostazioni e Logout — separati in fondo */}
+          <div className="border-t border-slate-100 pt-3 pb-4 space-y-2">
             <button
               onClick={() => handleSelect("settings")}
               className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-left active:scale-95 transition-transform bg-slate-50 border border-slate-100"
@@ -250,6 +250,16 @@ function MoreSheet({ onSelect, onClose }: { onSelect: (id: string) => void; onCl
                 <Settings className="w-[18px] h-[18px] text-slate-500" />
               </div>
               <span className="text-[13px] font-semibold text-slate-600">Impostazioni</span>
+            </button>
+            <button
+              onClick={() => { haptics.tap(); setVisible(false); setTimeout(() => { onLogout(); onClose(); }, 220); }}
+              className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-left active:scale-95 transition-transform bg-red-50 border border-red-100"
+              data-testid="more-nav-logout"
+            >
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-red-100">
+                <LogOut className="w-[18px] h-[18px] text-red-500" />
+              </div>
+              <span className="text-[13px] font-semibold text-red-600">Esci dall'account</span>
             </button>
           </div>
         </div>
@@ -469,7 +479,7 @@ function MainApp() {
         <BottomNav activeId={activeNavId} onClick={handleNavClick} />
 
         {/* ── More Sheet ── */}
-        {showMore && <MoreSheet onSelect={handleMoreSelect} onClose={() => setShowMore(false)} />}
+        {showMore && <MoreSheet onSelect={handleMoreSelect} onClose={() => setShowMore(false)} onLogout={logout} />}
       </div>
     </AuthContext.Provider>
   );
