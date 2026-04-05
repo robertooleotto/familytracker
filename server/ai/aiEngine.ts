@@ -53,6 +53,61 @@ export async function callClaude(prompt: string, maxTokens = 800, usePremium = f
   }
 }
 
+/**
+ * Multi-turn conversation call to Claude API.
+ * Accepts a system prompt and an array of messages with roles.
+ */
+export async function callClaudeConversation(
+  systemPrompt: string,
+  messages: Array<{ role: "user" | "assistant"; content: string }>,
+  maxTokens = 1200,
+  usePremium = false
+): Promise<string | null> {
+  const apiKey = process.env.CLAUDE_API_KEY;
+  if (!apiKey) {
+    console.warn("[AI] CLAUDE_API_KEY not set — returning null");
+    return null;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 45000);
+
+  try {
+    const res = await fetch(CLAUDE_API, {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: usePremium ? MODEL_PREMIUM : MODEL,
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      console.error("[AI] Claude conversation API error:", res.status, err);
+      return null;
+    }
+
+    const data = (await res.json()) as any;
+    return data?.content?.[0]?.text ?? null;
+  } catch (err: any) {
+    if (err.name === "AbortError") {
+      console.warn("[AI] Claude conversation call timed out");
+      return null;
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function callClaudeVision(
   prompt: string,
   imageBase64: string,

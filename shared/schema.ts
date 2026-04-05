@@ -687,6 +687,56 @@ export const medConfirmations = pgTable("med_confirmations", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ─── AI Chat Conversations ──────────────────────────────────────────────────
+export const aiConversations = pgTable("ai_conversations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  familyId: varchar("family_id").references(() => families.id, { onDelete: "cascade" }).notNull(),
+  profileId: varchar("profile_id").references(() => profiles.id, { onDelete: "cascade" }).notNull(),
+  type: varchar("type", { length: 20 }).notNull().default("family_chat"), // "family_chat" | "tutor"
+  title: text("title"),
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
+  closedAt: timestamp("closed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const aiMessages = pgTable("ai_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  conversationId: varchar("conversation_id").references(() => aiConversations.id, { onDelete: "cascade" }).notNull(),
+  role: varchar("role", { length: 10 }).notNull(), // "user" | "assistant"
+  content: text("content").notNull(),
+  tokensUsed: integer("tokens_used"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── AI Tutor Sessions ──────────────────────────────────────────────────────
+export const tutorSessions = pgTable("tutor_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  conversationId: varchar("conversation_id").references(() => aiConversations.id, { onDelete: "cascade" }).notNull(),
+  familyId: varchar("family_id").references(() => families.id, { onDelete: "cascade" }).notNull(),
+  childId: varchar("child_id").references(() => profiles.id, { onDelete: "cascade" }).notNull(),
+  subject: text("subject").notNull(),
+  topic: text("topic"),
+  difficulty: varchar("difficulty", { length: 15 }).default("medium"), // "easy" | "medium" | "hard"
+  questionsAsked: integer("questions_asked").notNull().default(0),
+  correctAnswers: integer("correct_answers").notNull().default(0),
+  durationMinutes: integer("duration_minutes").notNull().default(0),
+  parentReportSent: boolean("parent_report_sent").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertAiConversationSchema = createInsertSchema(aiConversations).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAiMessageSchema = createInsertSchema(aiMessages).omit({ id: true, createdAt: true });
+export const insertTutorSessionSchema = createInsertSchema(tutorSessions).omit({ id: true, createdAt: true, updatedAt: true });
+
+export type AiConversation = typeof aiConversations.$inferSelect;
+export type InsertAiConversation = z.infer<typeof insertAiConversationSchema>;
+export type AiMessage = typeof aiMessages.$inferSelect;
+export type InsertAiMessage = z.infer<typeof insertAiMessageSchema>;
+export type TutorSession = typeof tutorSessions.$inferSelect;
+export type InsertTutorSession = z.infer<typeof insertTutorSessionSchema>;
+
 export type User = Profile;
 export type InsertUser = InsertProfile;
 
