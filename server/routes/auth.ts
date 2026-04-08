@@ -76,6 +76,11 @@ export function registerAuthRoutes(app: Express): void {
     }
   });
 
+  app.post("/api/auth/logout", (_req, res) => {
+    // JWT è stateless — il logout effettivo avviene sul client eliminando il token
+    res.json({ ok: true });
+  });
+
   app.post("/api/auth/join", validateBody(joinSchema), async (req, res) => {
     try {
       const { firstName, lastName, email, password, inviteCode, role, colorHex } =

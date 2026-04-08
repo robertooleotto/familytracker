@@ -37,6 +37,7 @@ const DocumentiPage       = lazy(() => import("@/pages/DocumentiPage"));
 const ElderlyPage         = lazy(() => import("@/pages/ElderlyPage"));
 const GiornalePage        = lazy(() => import("@/pages/GiornalePage"));
 const DiarioPage          = lazy(() => import("@/pages/DiarioPage"));
+const AiFamilyChatPage    = lazy(() => import("@/pages/AiFamilyChatPage"));
 
 // ─── Error Boundary ───────────────────────────────────────────────────────────
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -65,7 +66,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 import {
   LayoutDashboard, MapPin, MessageCircle, Calendar, ShoppingCart,
   Shield, Pill, Home, Star, Settings, X, Wallet,
-  PawPrint, Car, Phone, UtensilsCrossed, Sparkles, GraduationCap, ShieldCheck, ChefHat, FolderOpen, Heart, BookOpen, Map,
+  PawPrint, Car, Phone, UtensilsCrossed, Sparkles, GraduationCap, ShieldCheck, ChefHat, FolderOpen, Heart, BookOpen, Map, Bot, LogOut,
 } from "lucide-react";
 
 const MAIN_TABS = [
@@ -119,6 +120,7 @@ const MORE_SECTIONS = [
       { id: "smartprotection", label: "Protezione smart",  icon: ShieldCheck,   color: "#10B981" },
       { id: "school",          label: "Registri scuola",   icon: GraduationCap, color: "#0EA5E9" },
       { id: "ai",              label: "AI Predittiva",     icon: Sparkles,      color: "#8B5CF6" },
+      { id: "aichat",          label: "Assistente AI",     icon: Bot,           color: "#2563EB" },
     ],
   },
 ];
@@ -149,10 +151,11 @@ const PAGE_TITLES: Record<string, string> = {
   elderly: "Sicurezza anziani",
   giornale: "Giornale di Famiglia",
   diario: "Diario Percorsi",
+  aichat: "Assistente Famiglia",
 };
 
 // ─── More Sheet (slide-up) ────────────────────────────────────────────────────
-function MoreSheet({ onSelect, onClose }: { onSelect: (id: string) => void; onClose: () => void }) {
+function MoreSheet({ onSelect, onClose, onLogout }: { onSelect: (id: string) => void; onClose: () => void; onLogout: () => void }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -236,8 +239,8 @@ function MoreSheet({ onSelect, onClose }: { onSelect: (id: string) => void; onCl
             </div>
           ))}
 
-          {/* Impostazioni — separato in fondo */}
-          <div className="border-t border-slate-100 pt-3 pb-4">
+          {/* Impostazioni e Logout — separati in fondo */}
+          <div className="border-t border-slate-100 pt-3 pb-4 space-y-2">
             <button
               onClick={() => handleSelect("settings")}
               className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-left active:scale-95 transition-transform bg-slate-50 border border-slate-100"
@@ -247,6 +250,16 @@ function MoreSheet({ onSelect, onClose }: { onSelect: (id: string) => void; onCl
                 <Settings className="w-[18px] h-[18px] text-slate-500" />
               </div>
               <span className="text-[13px] font-semibold text-slate-600">Impostazioni</span>
+            </button>
+            <button
+              onClick={() => { haptics.tap(); setVisible(false); setTimeout(() => { onLogout(); onClose(); }, 220); }}
+              className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-left active:scale-95 transition-transform bg-red-50 border border-red-100"
+              data-testid="more-nav-logout"
+            >
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-red-100">
+                <LogOut className="w-[18px] h-[18px] text-red-500" />
+              </div>
+              <span className="text-[13px] font-semibold text-red-600">Esci dall'account</span>
             </button>
           </div>
         </div>
@@ -343,7 +356,7 @@ function MainApp() {
   const { profile, token, isAuthenticated, login, logout, updateProfile } = useAuth();
   // Fix #22: URL-based routing — enables deep links, refresh, back button
   const [location, navigate] = useLocation();
-  const VALID_TABS = new Set(["briefing","map","chat","calendar","shopping","budget","tasks","deadlines","meds","geofences","settings","pets","vehicles","subscriptions","contacts","anniversaries","dinner","cucina","banking","ai","school","smartprotection","documenti","elderly","home","giornale","diario"]);
+  const VALID_TABS = new Set(["briefing","map","chat","calendar","shopping","budget","tasks","deadlines","meds","geofences","settings","pets","vehicles","subscriptions","contacts","anniversaries","dinner","cucina","banking","ai","school","smartprotection","documenti","elderly","home","giornale","diario","aichat"]);
   const pathTab = location.replace(/^\//, "") || "briefing";
   const activeTab = VALID_TABS.has(pathTab) ? pathTab : "briefing";
   const setActiveTab = useCallback((tab: string) => navigate(`/${tab === "briefing" ? "" : tab}`), [navigate]);
@@ -457,6 +470,7 @@ function MainApp() {
               {activeTab === "home"           && <DashboardPage onNavigate={setActiveTab} />}
               {activeTab === "giornale"       && <GiornalePage />}
               {activeTab === "diario"         && <DiarioPage />}
+              {activeTab === "aichat"         && <AiFamilyChatPage />}
             </Suspense>
           </ErrorBoundary>
         </main>
@@ -465,7 +479,7 @@ function MainApp() {
         <BottomNav activeId={activeNavId} onClick={handleNavClick} />
 
         {/* ── More Sheet ── */}
-        {showMore && <MoreSheet onSelect={handleMoreSelect} onClose={() => setShowMore(false)} />}
+        {showMore && <MoreSheet onSelect={handleMoreSelect} onClose={() => setShowMore(false)} onLogout={logout} />}
       </div>
     </AuthContext.Provider>
   );

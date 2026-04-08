@@ -37,7 +37,7 @@ export default function SettingsPage() {
     queryKey: ["/api/family"],
   });
 
-  const { data: familyMembersRaw } = useQuery<Array<{ profile: Profile }>>({
+  const { data: familyMembersRaw } = useQuery<Profile[]>({
     queryKey: ["/api/family/members"],
   });
 
@@ -215,7 +215,7 @@ export default function SettingsPage() {
         )}
 
         {/* Autonomia bambini */}
-        {profile?.role === "parent" && familyMembersRaw && familyMembersRaw.some(m => m.profile.role === "child") && (
+        {profile?.role === "parent" && familyMembersRaw && familyMembersRaw.some(m => m.role === "child" || m.role === "teen") && (
           <section className="bg-card border border-border rounded-2xl p-4 space-y-3">
             <div className="flex items-center gap-2 mb-1">
               <Baby className="w-4 h-4 text-primary" />
@@ -225,21 +225,21 @@ export default function SettingsPage() {
               Configura quando ogni membro può spostarsi da solo. Kinly userà queste informazioni per rilevare se serve un accompagnatore.
             </p>
             {familyMembersRaw
-              .filter(m => m.profile.role === "child")
+              .filter(m => m.role === "child" || m.role === "teen")
               .map(m => {
-                const hasAutonomy = !!(m.profile as any).autonomy;
+                const hasAutonomy = !!(m as any).autonomy;
                 return (
                   <button
-                    key={m.profile.id}
-                    onClick={() => setAutonomyWizardMember(m.profile)}
+                    key={m.id}
+                    onClick={() => setAutonomyWizardMember(m)}
                     className="w-full flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-accent transition-colors text-left"
-                    data-testid={`button-autonomy-${m.profile.id}`}
+                    data-testid={`button-autonomy-${m.id}`}
                   >
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold" style={{ backgroundColor: m.profile.colorHex || "var(--color-primary)" }}>
-                      {m.profile.name.charAt(0)}
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold" style={{ backgroundColor: m.colorHex || "var(--color-primary)" }}>
+                      {m.name.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{m.profile.name.split(" ")[0]}</p>
+                      <p className="text-sm font-medium">{m.name.split(" ")[0]}</p>
                       <p className="text-xs text-muted-foreground">{hasAutonomy ? "Profilo configurato" : "Da configurare"}</p>
                     </div>
                     <div className="flex items-center gap-1.5">
