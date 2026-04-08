@@ -1,14 +1,15 @@
 import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
-import { auth } from "../lib/routeHelpers";
+import { requireAuth } from "../lib/requireAuth";
+
 import { db } from "../db";
 import { locations, profileSettings, medConfirmations } from "@shared/schema";
 import { eq, and, gte } from "drizzle-orm";
 import { broadcastToFamily } from "../wsServer";
 
 export function registerElderlyRoutes(app: Express): void {
-  app.get("/api/elderly/vitals/:profileId", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/elderly/vitals/:profileId", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const type = req.query.type as string | undefined;
       const limit = parseInt(req.query.limit as string) || 50;
@@ -16,8 +17,8 @@ export function registerElderlyRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/elderly/vitals", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/elderly/vitals", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { profileId, type, value, value2, unit, notes, measuredAt } = req.body;
       if (!profileId || !type || value === undefined || !unit) return res.status(400).json({ message: "profileId, type, value, unit obbligatori" });
@@ -34,8 +35,8 @@ export function registerElderlyRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.delete("/api/elderly/vitals/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.delete("/api/elderly/vitals/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { await storage.deleteVitalSign(req.params.id, a.familyId); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
@@ -68,14 +69,14 @@ export function registerElderlyRoutes(app: Express): void {
     return null;
   }
 
-  app.get("/api/elderly/checkin/today", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/elderly/checkin/today", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getTodayCheckin(a.profileId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/elderly/checkin", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/elderly/checkin", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { status, mood, note } = req.body;
       if (!status) return res.status(400).json({ message: "status obbligatorio (ok | help)" });
@@ -90,26 +91,26 @@ export function registerElderlyRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.get("/api/elderly/checkin/history/:profileId", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/elderly/checkin/history/:profileId", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getDailyCheckins(req.params.profileId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.get("/api/elderly/emergency-card/:profileId", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/elderly/emergency-card/:profileId", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getEmergencyCard(req.params.profileId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.get("/api/elderly/emergency-cards", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/elderly/emergency-cards", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getEmergencyCardsByFamily(a.familyId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/elderly/emergency-card", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/elderly/emergency-card", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { profileId, fullName, dateOfBirth, bloodType, allergies, conditions, currentMedications, doctorName, doctorPhone,
         emergencyContact1Name, emergencyContact1Phone, emergencyContact1Relation,
@@ -125,34 +126,34 @@ export function registerElderlyRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.get("/api/elderly/alerts", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/elderly/alerts", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getElderlyAlerts(a.familyId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.get("/api/elderly/alerts/unacknowledged", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/elderly/alerts/unacknowledged", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getUnacknowledgedAlerts(a.familyId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/elderly/alerts/:id/acknowledge", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/elderly/alerts/:id/acknowledge", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { await storage.acknowledgeAlert(req.params.id, a.familyId, a.profileId); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.get("/api/elderly/meds/today/:profileId", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/elderly/meds/today/:profileId", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const today = new Date().toISOString().split("T")[0];
       res.json(await storage.getMedConfirmations(req.params.profileId, today));
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/elderly/meds/confirm", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/elderly/meds/confirm", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { medicationId, scheduledTime, status } = req.body;
       if (!medicationId || !scheduledTime) return res.status(400).json({ message: "medicationId e scheduledTime obbligatori" });
@@ -162,8 +163,8 @@ export function registerElderlyRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.get("/api/elderly/dashboard/:profileId", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/elderly/dashboard/:profileId", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const pid = req.params.profileId;
       const profile = await storage.getProfileById(pid);
@@ -195,14 +196,14 @@ export function registerElderlyRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.get("/api/elderly/members", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/elderly/members", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getElderlyProfiles(a.familyId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/elderly/fall-detected", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/elderly/fall-detected", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { lat, lng, impactG } = req.body;
       const profile = await storage.getProfileById(a.profileId);
@@ -218,8 +219,8 @@ export function registerElderlyRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/elderly/inactivity-alert", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/elderly/inactivity-alert", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { minutes } = req.body;
       const profile = await storage.getProfileById(a.profileId);

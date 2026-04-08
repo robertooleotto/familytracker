@@ -67,6 +67,10 @@ export class DbStorage {
     const [p] = await db.select().from(profiles).where(eq(profiles.email, email));
     return p;
   }
+  async getProfileByAuthUserId(authUserId: string): Promise<Profile | undefined> {
+    const [p] = await db.select().from(profiles).where(eq(profiles.authUserId, authUserId));
+    return p;
+  }
   async getFamilyMembers(familyId: string): Promise<Profile[]> {
     return db.select().from(profiles).where(eq(profiles.familyId, familyId));
   }
@@ -240,13 +244,15 @@ export class DbStorage {
     const [t] = await db.select().from(tasks).where(and(eq(tasks.id, id), eq(tasks.familyId, familyId)));
     if (!t || !t.completedAt) return;
     await db.update(tasks).set({ verifiedBy: verifierId }).where(and(eq(tasks.id, id), eq(tasks.familyId, familyId)));
-    // Add points to reward
-    const existing = await db.select().from(rewards).where(eq(rewards.profileId, t.assignedTo));
+    // Add points to reward — only if task is assigned to someone
+    if (!t.assignedTo) return;
+    const assigneeId = t.assignedTo;
+    const existing = await db.select().from(rewards).where(eq(rewards.profileId, assigneeId));
     if (existing.length > 0) {
       await db.update(rewards).set({ pointsTotal: existing[0].pointsTotal + t.points, updatedAt: new Date() })
-        .where(eq(rewards.profileId, t.assignedTo));
+        .where(eq(rewards.profileId, assigneeId));
     } else {
-      await db.insert(rewards).values({ profileId: t.assignedTo, familyId, pointsTotal: t.points, pointsSpent: 0 });
+      await db.insert(rewards).values({ profileId: assigneeId, familyId, pointsTotal: t.points, pointsSpent: 0 });
     }
   }
   async deleteTask(id: string, familyId: string): Promise<void> {
@@ -436,16 +442,15 @@ export class DbStorage {
     }
   }
   // ─── Bank Connections ─────────────────────────────────────────────────────────
+  // The full banking flow lives in `server/lib/banking/storage.ts` (it has to
+  // handle token encryption); these wrappers exist only for legacy callers
+  // (e.g. GDPR export) that just need to read the connection list.
   async createBankConnection(data: InsertBankConnection): Promise<BankConnection> {
     const [c] = await db.insert(bankConnections).values(data).returning();
     return c;
   }
   async getBankConnectionsByFamily(familyId: string): Promise<BankConnection[]> {
     return db.select().from(bankConnections).where(eq(bankConnections.familyId, familyId)).orderBy(desc(bankConnections.createdAt));
-  }
-  async getBankConnectionByRequisition(requisitionId: string): Promise<BankConnection | undefined> {
-    const [c] = await db.select().from(bankConnections).where(eq(bankConnections.requisitionId, requisitionId));
-    return c;
   }
   async updateBankConnection(id: string, familyId: string, data: Partial<BankConnection>): Promise<void> {
     await db.update(bankConnections).set(data).where(and(eq(bankConnections.id, id), eq(bankConnections.familyId, familyId)));

@@ -45,6 +45,10 @@ export const profiles = pgTable("profiles", {
     bike_allowed_routes: string[];
   }>().default({ has_driving_license: false, can_use_bus: false, has_bike: false, bike_allowed_routes: [] }),
   ageMilestonesNotified: text("age_milestones_notified").array().default(sql`'{}'::text[]`),
+  // Link to Supabase auth.users(id). NULL for legacy profiles created before
+  // the Supabase Auth migration; populated by the v2 register/login flow and
+  // by the backfill script. Used by RLS helper current_family_id().
+  authUserId: varchar("auth_user_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -328,24 +332,66 @@ export const anniversaries = pgTable("anniversaries", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// ── Bank Connections (Open Banking / TrueLayer PSD2) ──────────────────────────
+// ── Bank Connections (Open Banking aggregators) ───────────────────────────────
+// One row per (family member ↔ bank) connection. The `provider` column tells us
+// which aggregator owns this connection (truelayer | tink | saltedge | yapily).
+// Tokens are stored encrypted at rest via encryptField/decryptField.
 export const bankConnections = pgTable("bank_connections", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   familyId: varchar("family_id").references(() => families.id, { onDelete: "cascade" }).notNull(),
   profileId: varchar("profile_id").references(() => profiles.id, { onDelete: "cascade" }).notNull(),
-  provider: text("provider").notNull().default("truelayer"), // "truelayer" | "gocardless"
-  requisitionId: text("requisition_id").notNull(),
+  provider: text("provider").notNull(), // "truelayer" | "tink" | "saltedge" | "yapily"
+  // External identifiers used by the upstream provider:
+  externalConnectionId: text("external_connection_id"), // saltedge connection id, yapily consent id, tink credentials id, truelayer connection id
   institutionId: text("institution_id").notNull(),
   institutionName: text("institution_name").notNull(),
   institutionLogo: text("institution_logo"),
-  status: text("status").notNull().default("pending"),
-  accountIds: text("account_ids").array().notNull().default(sql`'{}'::text[]`),
+  countryCode: text("country_code"),
+  status: text("status").notNull().default("pending"), // pending | active | needs_reauth | error | revoked
+  // Encrypted credentials. For OAuth flows we keep access/refresh; for Salt Edge
+  // connections we only need the connection id.
   accessToken: text("access_token"),
   refreshToken: text("refresh_token"),
   tokenExpiresAt: timestamp("token_expires_at"),
-  authUrl: text("auth_url"),
+  consentExpiresAt: timestamp("consent_expires_at"),
+  // Per-connection scratch space for provider state (e.g. last cursor, next sync token).
+  providerMetadata: jsonb("provider_metadata").$type<Record<string, unknown>>(),
+  errorMessage: text("error_message"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastSyncAt: timestamp("last_sync_at"),
+});
+
+// ── Bank Accounts (one row per IBAN/account exposed by a connection) ──────────
+export const bankAccounts = pgTable("bank_accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  familyId: varchar("family_id").references(() => families.id, { onDelete: "cascade" }).notNull(),
+  connectionId: varchar("connection_id").references(() => bankConnections.id, { onDelete: "cascade" }).notNull(),
+  externalAccountId: text("external_account_id").notNull(),
+  name: text("name").notNull(),
+  type: text("type"), // current | savings | credit_card | loan | …
+  iban: text("iban"),
+  currency: text("currency").notNull().default("EUR"),
+  balance: numeric("balance", { precision: 14, scale: 2 }),
+  available: numeric("available", { precision: 14, scale: 2 }),
+  lastSyncedAt: timestamp("last_synced_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ── Bank Transactions ────────────────────────────────────────────────────────
+export const bankTransactions = pgTable("bank_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  familyId: varchar("family_id").references(() => families.id, { onDelete: "cascade" }).notNull(),
+  accountId: varchar("account_id").references(() => bankAccounts.id, { onDelete: "cascade" }).notNull(),
+  externalTransactionId: text("external_transaction_id").notNull(),
+  bookedAt: timestamp("booked_at").notNull(),
+  valueAt: timestamp("value_at"),
+  amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("EUR"),
+  description: text("description"),
+  counterparty: text("counterparty"),
+  category: text("category"),
+  rawPayload: jsonb("raw_payload").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // ── Dinner Rotation ───────────────────────────────────────────────────────────
@@ -372,6 +418,7 @@ export const aiInsights = pgTable("ai_insights", {
   type: text("type").notNull(),
   message: text("message").notNull(),
   severity: text("severity").notNull().default("info"),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   readAt: timestamp("read_at"),
 });
@@ -691,8 +738,11 @@ export const medConfirmations = pgTable("med_confirmations", {
 export const aiConversations = pgTable("ai_conversations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   familyId: varchar("family_id").references(() => families.id, { onDelete: "cascade" }).notNull(),
+  // userId is a legacy column kept nullable to match existing DB; prefer profileId.
+  userId: varchar("user_id"),
   profileId: varchar("profile_id").references(() => profiles.id, { onDelete: "cascade" }).notNull(),
   type: varchar("type", { length: 20 }).notNull().default("family_chat"), // "family_chat" | "tutor"
+  status: varchar("status", { length: 20 }).notNull().default("active"), // "active" | "closed" | "archived"
   title: text("title"),
   metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
   closedAt: timestamp("closed_at"),
@@ -705,6 +755,7 @@ export const aiMessages = pgTable("ai_messages", {
   conversationId: varchar("conversation_id").references(() => aiConversations.id, { onDelete: "cascade" }).notNull(),
   role: varchar("role", { length: 10 }).notNull(), // "user" | "assistant"
   content: text("content").notNull(),
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
   tokensUsed: integer("tokens_used"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

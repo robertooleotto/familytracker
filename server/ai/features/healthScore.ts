@@ -30,7 +30,8 @@ export async function calculateHealthScore(familyId: string): Promise<HealthScor
 
   const totalSubscriptions = subs
     .reduce((s, sub) => {
-      const monthly = sub.billingCycle === "yearly" ? sub.amount / 12 : sub.amount;
+      const amount = Number(sub.amount);
+      const monthly = sub.billingCycle === "yearly" ? amount / 12 : amount;
       return s + monthly;
     }, 0)
     .toFixed(2);

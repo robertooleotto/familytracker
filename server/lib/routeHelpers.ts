@@ -1,4 +1,3 @@
-import type { Express, Request, Response } from "express";
 import { randomBytes, createHash, createCipheriv, createDecipheriv } from "crypto";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
@@ -107,24 +106,6 @@ export function verifyToken(token: string): { profileId: string; familyId: strin
 }
 
 /**
- * Extract and verify bearer token from Authorization header.
- * Returns { profileId, familyId } on success, or null with 401 response sent.
- */
-export async function auth(req: Request, res: Response): Promise<{ profileId: string; familyId: string } | null> {
-  const h = req.headers.authorization;
-  if (!h?.startsWith("Bearer ")) {
-    res.status(401).json({ message: "Unauthorized" });
-    return null;
-  }
-  const payload = verifyToken(h.slice(7));
-  if (!payload) {
-    res.status(401).json({ message: "Invalid token" });
-    return null;
-  }
-  return payload;
-}
-
-/**
  * Sanitize a profile object by removing the passwordHash field.
  * Used to prevent exposing password hashes in API responses.
  */
@@ -134,13 +115,33 @@ export function safe(p: any) {
 }
 
 /**
- * Rate limiter for auth endpoints: 20 requests per 15 minutes.
+ * Rate limiter for general auth endpoints (signup, refresh, etc).
+ * 20 requests per 15 minutes per IP.
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+});
+
+/**
+ * Strict rate limiter for the LOGIN endpoint specifically.
+ * 5 requests per minute per IP, to slow brute-force attacks.
+ *
+ * Use this on /api/auth/login (and /api/auth/reset-password) instead of the
+ * generic authLimiter. The slow window means a real user fat-fingering their
+ * password three times is fine, but an attacker doing 1000 guesses/hour is
+ * blocked at the door.
+ */
+export const strictAuthLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many attempts. Please wait a minute and try again." },
+  // Per-IP is the default; in the future, also key by username/email so an
+  // attacker can't pivot through multiple IPs against one account.
 });
 
 /**

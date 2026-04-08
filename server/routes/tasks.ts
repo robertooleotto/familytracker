@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { storage } from "../storage";
-import { auth } from "../lib/routeHelpers";
+import { requireAuth } from "../lib/requireAuth";
+
 import { db } from "../db";
 import { tasks, checkins, profileSettings, rewards, profiles } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
@@ -8,14 +9,14 @@ import { callClaude, parseJSON } from "../ai/aiEngine";
 
 export function registerTasksRoutes(app: Express): void {
   // ─── TASKS & REWARDS ───────────────────────────────────────────────────────
-  app.get("/api/tasks", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/tasks", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getTasksByFamily(a.familyId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/tasks", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/tasks", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { assignedTo, title, description, points, recurrence, dueDate } = req.body;
       if (!title) return res.status(400).json({ message: "Missing title" });
@@ -34,16 +35,16 @@ export function registerTasksRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/tasks/:id/claim", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/tasks/:id/claim", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       await db.update(tasks).set({ assignedTo: a.profileId }).where(and(eq(tasks.id, req.params.id), eq(tasks.familyId, a.familyId)));
       res.json({ ok: true });
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/tasks/ai-suggest", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/tasks/ai-suggest", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const [members, existingTasks, evts] = await Promise.all([
         storage.getFamilyMembers(a.familyId),
@@ -87,48 +88,47 @@ Rispondi SOLO con JSON valido, nessun testo aggiuntivo:
 
 IDs membri per riferimento: ${members.map(m => `${m.name}="${m.id}"`).join(", ")}`;
 
-      const raw = await callClaude(prompt, "task-ai-suggest", 60 * 60 * 1000);
+      const raw = await callClaude(prompt, 1200);
       const parsed = parseJSON(raw);
       res.json(parsed);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/tasks/:id/complete", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/tasks/:id/complete", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { await storage.completeTask(req.params.id, a.familyId); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/tasks/:id/verify", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/tasks/:id/verify", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { await storage.verifyTask(req.params.id, a.profileId, a.familyId); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.delete("/api/tasks/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.delete("/api/tasks/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { await storage.deleteTask(req.params.id, a.familyId); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.get("/api/rewards", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/rewards", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getRewards(a.familyId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
   // ─── CHECK-INS ─────────────────────────────────────────────────────────────
-  app.get("/api/checkins", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/checkins", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getCheckinsByFamily(a.familyId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
   // POST /api/checkins — check-in volontario con punto gamification
-  app.post("/api/checkins", async (req, res) => {
+  app.post("/api/checkins", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const { placeName, lat, lng, note } = req.body;
       if (!placeName) return res.status(400).json({ message: "placeName obbligatorio" });
       const [checkin] = await db.insert(checkins).values({ userId: payload.profileId, familyId: payload.familyId, placeName, lat: lat || null, lng: lng || null, note: note || null }).returning();
@@ -160,10 +160,9 @@ IDs membri per riferimento: ${members.map(m => `${m.name}="${m.id}"`).join(", ")
   });
 
   // GET /api/checkins/family — ultimi check-in di tutta la famiglia
-  app.get("/api/checkins/family", async (req, res) => {
+  app.get("/api/checkins/family", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const rows = await db.select({
         id: checkins.id, userId: checkins.userId, familyId: checkins.familyId,
         placeName: checkins.placeName, lat: checkins.lat, lng: checkins.lng,
@@ -180,10 +179,9 @@ IDs membri per riferimento: ${members.map(m => `${m.name}="${m.id}"`).join(", ")
   });
 
   // GET /api/checkins/mine — miei check-in con streak
-  app.get("/api/checkins/mine", async (req, res) => {
+  app.get("/api/checkins/mine", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const rows = await db.select().from(checkins).where(eq(checkins.userId, payload.profileId)).orderBy(desc(checkins.createdAt)).limit(20);
       const [settings] = await db.select().from(profileSettings).where(eq(profileSettings.profileId, payload.profileId));
       const [reward] = await db.select().from(rewards).where(eq(rewards.profileId, payload.profileId));

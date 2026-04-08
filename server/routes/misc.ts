@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
-import { auth } from "../lib/routeHelpers";
+import { requireAuth } from "../lib/requireAuth";
+
 import { storage } from "../storage";
 import { db } from "../db";
 import { trips, profiles, checkins } from "@shared/schema";
@@ -7,8 +8,8 @@ import { eq, desc } from "drizzle-orm";
 
 export function registerMiscRoutes(app: Express): void {
   // ─── TRIPS ────────────────────────────────────────────────────────────────
-  app.get("/api/trips", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/trips", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const rows = await db
         .select({ trip: trips, profile: { id: profiles.id, name: profiles.name, colorHex: profiles.colorHex, role: profiles.role } })
@@ -21,8 +22,8 @@ export function registerMiscRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/trips", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/trips", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { fromName, toName, fromLat, fromLng, toLat, toLng, distanceKm, durationMin, mode, note, startedAt, endedAt } = req.body;
       if (!fromName || !toName || !startedAt) return res.status(400).json({ message: "fromName, toName e startedAt obbligatori" });
@@ -39,16 +40,16 @@ export function registerMiscRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.delete("/api/trips/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.delete("/api/trips/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       await db.delete(trips).where(eq(trips.id, req.params.id) as any);
       res.json({ ok: true });
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.get("/api/trips/memory", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/trips/memory", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const recentTrips = await db
         .select({ trip: trips, profile: { name: profiles.name } })
@@ -84,8 +85,8 @@ export function registerMiscRoutes(app: Express): void {
   });
 
   // ─── WEATHER ───────────────────────────────────────────────────────────────
-  app.get("/api/weather", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/weather", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { lat, lng } = req.query;
       if (!lat || !lng) return res.status(400).json({ message: "lat e lng obbligatori" });

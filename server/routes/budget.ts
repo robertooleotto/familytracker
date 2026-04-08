@@ -1,17 +1,17 @@
 import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
-import { auth } from "../lib/routeHelpers";
+import { requireAuth } from "../lib/requireAuth";
 
 export function registerBudgetRoutes(app: Express): void {
   // ─── BUDGET CATEGORIES ─────────────────────────────────────────────────────
-  app.get("/api/budget/categories", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/budget/categories", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getBudgetCategories(a.familyId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/budget/categories", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/budget/categories", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { name, budgetAmount, color, icon } = req.body;
       if (!name) return res.status(400).json({ message: "Name required" });
@@ -25,23 +25,23 @@ export function registerBudgetRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.patch("/api/budget/categories/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.patch("/api/budget/categories/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       await storage.updateBudgetCategory(req.params.id, a.familyId, req.body);
       res.json({ ok: true });
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.delete("/api/budget/categories/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.delete("/api/budget/categories/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { await storage.deleteBudgetCategory(req.params.id, a.familyId); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
   // ─── EXPENSES ──────────────────────────────────────────────────────────────
-  app.get("/api/budget/expenses", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/budget/expenses", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const limit = Math.min(parseInt(req.query.limit as string) || 200, 500);
       const offset = parseInt(req.query.offset as string) || 0;
@@ -53,8 +53,8 @@ export function registerBudgetRoutes(app: Express): void {
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/budget/expenses", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/budget/expenses", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { title, amount, categoryId, date, notes } = req.body;
       if (!title || amount === undefined) return res.status(400).json({ message: "Title and amount required" });
@@ -69,8 +69,8 @@ export function registerBudgetRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.delete("/api/budget/expenses/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.delete("/api/budget/expenses/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { await storage.deleteExpense(req.params.id, a.familyId); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });

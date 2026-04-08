@@ -1,17 +1,17 @@
 import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
-import { auth } from "../lib/routeHelpers";
+import { requireAuth } from "../lib/requireAuth";
 
 export function registerHomeRoutes(app: Express): void {
   // ─── HOME DEADLINES ────────────────────────────────────────────────────────
-  app.get("/api/deadlines", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/deadlines", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getHomeDeadlines(a.familyId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/deadlines", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/deadlines", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { title, dueDate, category, reminderDaysBefore, notes } = req.body;
       if (!title || !dueDate) return res.status(400).json({ message: "Missing fields" });
@@ -19,8 +19,8 @@ export function registerHomeRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.patch("/api/deadlines/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.patch("/api/deadlines/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { title, dueDate, category, reminderDaysBefore, notes, completed } = req.body;
       const u: Record<string, any> = {};
@@ -35,20 +35,20 @@ export function registerHomeRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.delete("/api/deadlines/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.delete("/api/deadlines/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { await storage.deleteHomeDeadline(req.params.id, a.familyId); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
   // ─── HOME CONTACTS ──────────────────────────────────────────────────────────
-  app.get("/api/home-contacts", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/home-contacts", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getHomeContactsByFamily(a.familyId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.post("/api/home-contacts", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/home-contacts", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { name, category, phone, email, notes } = req.body;
       if (!name) return res.status(400).json({ message: "Name required" });
@@ -56,8 +56,8 @@ export function registerHomeRoutes(app: Express): void {
       res.json(c);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.patch("/api/home-contacts/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.patch("/api/home-contacts/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { name, category, phone, email, notes } = req.body;
       const u: Record<string, any> = {};
@@ -69,20 +69,20 @@ export function registerHomeRoutes(app: Express): void {
       await storage.updateHomeContact(req.params.id, a.familyId, u); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.delete("/api/home-contacts/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.delete("/api/home-contacts/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { await storage.deleteHomeContact(req.params.id, a.familyId); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
   // ─── ANNIVERSARIES ──────────────────────────────────────────────────────────
-  app.get("/api/anniversaries", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/anniversaries", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getAnniversariesByFamily(a.familyId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.post("/api/anniversaries", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/anniversaries", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { title, date, type, profileId, reminderDaysBefore } = req.body;
       if (!title || !date) return res.status(400).json({ message: "title and date required" });
@@ -90,8 +90,8 @@ export function registerHomeRoutes(app: Express): void {
       res.json(ann);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.patch("/api/anniversaries/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.patch("/api/anniversaries/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { title, date, type, profileId, reminderDaysBefore } = req.body;
       const u: Record<string, any> = {};
@@ -103,20 +103,20 @@ export function registerHomeRoutes(app: Express): void {
       await storage.updateAnniversary(req.params.id, a.familyId, u); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.delete("/api/anniversaries/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.delete("/api/anniversaries/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { await storage.deleteAnniversary(req.params.id, a.familyId); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
   // ─── DINNER ROTATION ────────────────────────────────────────────────────────
-  app.get("/api/dinner-rotation", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/dinner-rotation", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getDinnerRotationByFamily(a.familyId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.put("/api/dinner-rotation", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.put("/api/dinner-rotation", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { weekday, profileId, meal } = req.body;
       if (weekday === undefined) return res.status(400).json({ message: "weekday required" });

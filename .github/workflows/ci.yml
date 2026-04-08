@@ -1,0 +1,89 @@
+name: CI
+
+# Runs on every push and PR. The job is intentionally fast (< 3 min) so it
+# never feels like a tax. It guards three things:
+#   1. The TypeScript code still compiles.
+#   2. The Drizzle schema is in sync with the migrations folder
+#      (catches the exact bug we hit on 2026-04-07: schema drift).
+#   3. The production build succeeds end-to-end.
+#
+# Add `secrets.DATABASE_URL` in GitHub repo settings (use a *non-production*
+# Supabase branch or a throwaway DB) so drizzle-kit can introspect.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Typecheck · Schema · Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript typecheck
+        run: npm run check
+
+      - name: Drizzle schema drift check
+        # `drizzle-kit check` compares shared/schema.ts against the migrations
+        # folder and exits non-zero if they disagree. This is what would have
+        # caught the missing `status`/`metadata` columns BEFORE production.
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_CI }}
+        run: npx drizzle-kit check
+
+      - name: Production build
+        env:
+          # Build needs DATABASE_URL only because drizzle.config.ts asserts it
+          # at import time; the value is never connected to during build.
+          DATABASE_URL: ${{ secrets.DATABASE_URL_CI || 'postgres://ci:ci@localhost:5432/ci' }}
+        run: npm run build
+
+      - name: Verify build artifact exists
+        run: |
+          test -f dist/index.cjs || (echo "::error::dist/index.cjs missing after build" && exit 1)
+          ls -lh dist/
+
+      - name: API tests (vitest + supertest)
+        # These tests don't need a database for the validation suite. The
+        # happy-path tests are gated behind a real DATABASE_URL and skipped
+        # otherwise. Failure here is a build break.
+        # Will be a no-op until vitest+supertest are added to package.json.
+        run: |
+          if [ -f node_modules/.bin/vitest ]; then
+            npx vitest run
+          else
+            echo "vitest not installed yet — skipping (see tests/README.md)"
+          fi
+
+  # Placeholder for the E2E job we'll add in Phase 5 of the roadmap.
+  # Kept commented so the workflow is ready to grow into.
+  # e2e:
+  #   name: Playwright E2E
+  #   runs-on: ubuntu-latest
+  #   needs: quality
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with: { node-version: "20", cache: "npm" }
+  #     - run: npm ci
+  #     - run: npx playwright install --with-deps chromium
+  #     - run: npm run test:e2e

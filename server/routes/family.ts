@@ -3,18 +3,18 @@ import { storage } from "../storage";
 import { db } from "../db";
 import { profiles, profileSettings, moodPhotos, locations } from "@shared/schema";
 import { eq, and, inArray } from "drizzle-orm";
-import { auth, safe } from "../lib/routeHelpers";
+import { safe } from "../lib/routeHelpers";
 import { broadcastToFamily } from "../wsServer";
 import { ObjectStorageService, ObjectNotFoundError } from "../replit_integrations/object_storage/objectStorage";
+import { requireAuth } from "../lib/requireAuth";
 
 // Object storage service for profile avatars and mood photos
 const objStore = new ObjectStorageService();
 
 export function registerFamilyRoutes(app: Express): void {
   // ─── FAMILY BASICS ─────────────────────────────────────────────────────────
-  app.get("/api/family", async (req, res) => {
-    const a = await auth(req, res);
-    if (!a) return;
+  app.get("/api/family", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const family = await storage.getFamilyById(a.familyId);
       if (!family) return res.status(404).json({ message: "Family not found" });
@@ -24,9 +24,8 @@ export function registerFamilyRoutes(app: Express): void {
     }
   });
 
-  app.get("/api/family/members", async (req, res) => {
-    const a = await auth(req, res);
-    if (!a) return;
+  app.get("/api/family/members", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const members = await storage.getFamilyMembers(a.familyId);
       res.json(members.map(safe));
@@ -35,9 +34,8 @@ export function registerFamilyRoutes(app: Express): void {
     }
   });
 
-  app.patch("/api/profile", async (req, res) => {
-    const a = await auth(req, res);
-    if (!a) return;
+  app.patch("/api/profile", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { name, colorHex, uiMode } = req.body;
       const updated = await storage.updateProfile(a.profileId, { name, colorHex, uiMode });
@@ -48,9 +46,8 @@ export function registerFamilyRoutes(app: Express): void {
   });
 
   // ─── LOCATION CONTROL ──────────────────────────────────────────────────────
-  app.post("/api/location/pause", async (req, res) => {
-    const a = await auth(req, res);
-    if (!a) return;
+  app.post("/api/location/pause", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       await storage.setLocationPaused(a.profileId, true);
       res.json({ ok: true, paused: true });
@@ -59,9 +56,8 @@ export function registerFamilyRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/location/resume", async (req, res) => {
-    const a = await auth(req, res);
-    if (!a) return;
+  app.post("/api/location/resume", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       await storage.setLocationPaused(a.profileId, false);
       res.json({ ok: true, paused: false });
@@ -71,9 +67,8 @@ export function registerFamilyRoutes(app: Express): void {
   });
 
   // ─── LOCATIONS ─────────────────────────────────────────────────────────────
-  app.post("/api/locations", async (req, res) => {
-    const a = await auth(req, res);
-    if (!a) return;
+  app.post("/api/locations", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { lat, lng, accuracy, speed, isMoving, batteryPct, wifiSsid } = req.body;
       if (lat === undefined || lng === undefined) return res.status(400).json({ message: "Missing coordinates" });
@@ -98,9 +93,8 @@ export function registerFamilyRoutes(app: Express): void {
     }
   });
 
-  app.get("/api/family/locations", async (req, res) => {
-    const a = await auth(req, res);
-    if (!a) return;
+  app.get("/api/family/locations", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const members = await storage.getFamilyMembers(a.familyId);
       const locs = await storage.getLatestLocations(a.familyId);
@@ -115,9 +109,8 @@ export function registerFamilyRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/sos", async (req, res) => {
-    const a = await auth(req, res);
-    if (!a) return;
+  app.post("/api/sos", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { lat, lng } = req.body;
       if (lat === undefined || lng === undefined) return res.status(400).json({ message: "Missing coordinates" });
@@ -148,10 +141,9 @@ export function registerFamilyRoutes(app: Express): void {
   });
 
   // ─── PROFILE SETTINGS & MOOD ────────────────────────────────────────────────
-  app.get("/api/profile/settings", async (req, res) => {
+  app.get("/api/profile/settings", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       let [settings] = await db
         .select()
         .from(profileSettings)
@@ -169,10 +161,9 @@ export function registerFamilyRoutes(app: Express): void {
     }
   });
 
-  app.patch("/api/profile/mood", async (req, res) => {
+  app.patch("/api/profile/mood", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const { mood } = req.body;
       const valid = ["happy", "excited", "sleeping", "focused", "neutral", "sad"];
       if (!valid.includes(mood)) return res.status(400).json({ message: "Invalid mood" });
@@ -188,10 +179,9 @@ export function registerFamilyRoutes(app: Express): void {
   });
 
   // ─── MOOD PHOTOS ───────────────────────────────────────────────────────────
-  app.get("/api/profile/mood-photos", async (req, res) => {
+  app.get("/api/profile/mood-photos", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const rows = await db
         .select()
         .from(moodPhotos)
@@ -202,9 +192,8 @@ export function registerFamilyRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/profile/mood-photos/upload-url", async (req, res) => {
-    const payload = await auth(req, res);
-    if (!payload) return;
+  app.post("/api/profile/mood-photos/upload-url", requireAuth, async (req, res) => {
+    const payload = req.auth!;
     try {
       const { name, size, contentType } = req.body;
       const uploadURL = await objStore.getObjectEntityUploadURL();
@@ -215,10 +204,9 @@ export function registerFamilyRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/profile/mood-photos", async (req, res) => {
+  app.post("/api/profile/mood-photos", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const { mood, photoBase64, objectPath } = req.body;
       const valid = ["happy", "excited", "sleeping", "focused", "neutral", "sad"];
       if (!valid.includes(mood) || (!photoBase64 && !objectPath))
@@ -265,10 +253,9 @@ export function registerFamilyRoutes(app: Express): void {
     }
   });
 
-  app.get("/api/family/mood-photos", async (req, res) => {
+  app.get("/api/family/mood-photos", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const members = await storage.getFamilyMembers(payload.familyId);
       const memberIds = members.map((m) => m.id);
       const rows =
@@ -294,10 +281,9 @@ export function registerFamilyRoutes(app: Express): void {
     }
   });
 
-  app.delete("/api/profile/mood-photos/:mood", async (req, res) => {
+  app.delete("/api/profile/mood-photos/:mood", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       await db
         .delete(moodPhotos)
         .where(
@@ -313,9 +299,8 @@ export function registerFamilyRoutes(app: Express): void {
   });
 
   // ─── AVATAR & PHOTOS ───────────────────────────────────────────────────────
-  app.post("/api/profile/avatar-upload-url", async (req, res) => {
-    const payload = await auth(req, res);
-    if (!payload) return;
+  app.post("/api/profile/avatar-upload-url", requireAuth, async (req, res) => {
+    const payload = req.auth!;
     try {
       const { name, size, contentType } = req.body;
       const uploadURL = await objStore.getObjectEntityUploadURL();
@@ -326,9 +311,8 @@ export function registerFamilyRoutes(app: Express): void {
     }
   });
 
-  app.get("/api/photos/:id", async (req, res) => {
-    const payload = await auth(req, res);
-    if (!payload) return;
+  app.get("/api/photos/:id", requireAuth, async (req, res) => {
+    const payload = req.auth!;
     try {
       const fullPath = `/objects/uploads/${req.params.id}`;
       const file = await objStore.getObjectEntityFile(fullPath);
@@ -340,10 +324,9 @@ export function registerFamilyRoutes(app: Express): void {
   });
 
   // ─── PROFILE SETTINGS (DETAILED) ────────────────────────────────────────────
-  app.patch("/api/profile/settings", async (req, res) => {
+  app.patch("/api/profile/settings", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const allowed = [
         "schoolModeEnabled",
         "schoolModeFrom",
@@ -386,10 +369,9 @@ export function registerFamilyRoutes(app: Express): void {
     }
   });
 
-  app.get("/api/profile/family-settings", async (req, res) => {
+  app.get("/api/profile/family-settings", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const members = await db
         .select()
         .from(profiles)

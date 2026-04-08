@@ -127,7 +127,7 @@ function ElderlySimplifiedView() {
           )}
         </div>
 
-        {todayMeds && (todayMeds as any[]).length > 0 && (
+        {Array.isArray(todayMeds) && todayMeds.length > 0 && (
           <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
             <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Medicine di oggi</p>
             {(todayMeds as any[]).map((med: any) => (

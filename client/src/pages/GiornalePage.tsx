@@ -188,7 +188,7 @@ const FILTER_TYPE_MAP: Record<FilterKey, FeedItem["type"] | null> = {
 };
 
 export default function GiornalePage() {
-  const { profile, members: membersCtx } = useAuth();
+  const { profile } = useAuth();
   const [activeFilter, setActiveFilter] = useState<FilterKey>("Tutto");
 
   const { data: events = [] } = useQuery<Event[]>({ queryKey: ["/api/events"] });
@@ -197,11 +197,14 @@ export default function GiornalePage() {
   const { data: locations = [] } = useQuery<{ profile: Profile; location: { locationName?: string } | null }[]>({
     queryKey: ["/api/family/locations"],
   });
+  const { data: membersCtx = [] } = useQuery<Array<{ profile: Profile }>>({
+    queryKey: ["/api/family/members"],
+  });
   const { data: aiSummary } = useQuery<{ text: string; date: string }>({ queryKey: ["/api/ai/summary"] });
 
   const profileMap = useMemo(() => {
     const map: Record<string, Profile> = {};
-    (membersCtx ?? []).forEach((m: { profile: Profile }) => { map[m.profile.id] = m.profile; });
+    membersCtx.forEach((m) => { map[m.profile.id] = m.profile; });
     return map;
   }, [membersCtx]);
 
@@ -218,7 +221,7 @@ export default function GiornalePage() {
     });
 
     tasks.forEach((t) => {
-      const p = profileMap[t.assignedTo];
+      const p = t.assignedTo ? profileMap[t.assignedTo] : undefined;
       items.push({
         id: `task-${t.id}`,
         type: "task",
@@ -234,8 +237,9 @@ export default function GiornalePage() {
 
     const shoppingByProfile: Record<string, string[]> = {};
     shopping.forEach((s) => {
-      if (!shoppingByProfile[s.addedBy]) shoppingByProfile[s.addedBy] = [];
-      shoppingByProfile[s.addedBy].push(s.name);
+      const key = s.addedBy ?? "unknown";
+      if (!shoppingByProfile[key]) shoppingByProfile[key] = [];
+      shoppingByProfile[key].push(s.name);
     });
     Object.entries(shoppingByProfile).forEach(([pid, names]) => {
       const p = profileMap[pid];

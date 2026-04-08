@@ -31,7 +31,7 @@ export async function generateEveningSummary(familyId: string): Promise<string |
       )),
   ]);
 
-  const totalSpent = expensesRes.reduce((s, e) => s + Math.abs(e.amount), 0).toFixed(2);
+  const totalSpent = expensesRes.reduce((s, e) => s + Math.abs(Number(e.amount)), 0).toFixed(2);
 
   const prompt = `
 Sei l'assistente della famiglia. Scrivi un riepilogo serale in italiano,

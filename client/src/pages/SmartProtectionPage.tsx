@@ -26,6 +26,7 @@ interface ProfileSettings {
   schoolModeEnabled: boolean;
   schoolModeFrom: string;
   schoolModeTo: string;
+  schoolModeDays: string[];
   elderlyTrackingEnabled: boolean;
   nightAlertEnabled: boolean;
   nightAlertFrom: string;

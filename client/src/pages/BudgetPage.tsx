@@ -467,7 +467,7 @@ export default function BudgetPage() {
                 <Input
                   type="number"
                   defaultValue={editCategory.budgetAmount}
-                  onChange={e => setEditCategory(p => p ? { ...p, budgetAmount: parseFloat(e.target.value) || 0 } : null)}
+                  onChange={e => setEditCategory(p => p ? { ...p, budgetAmount: String(parseFloat(e.target.value) || 0) } : null)}
                   className="mt-1.5"
                   data-testid="input-edit-budget"
                 />

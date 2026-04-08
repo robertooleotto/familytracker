@@ -36,7 +36,7 @@ export async function generateSpendingForecast(familyId: string): Promise<Spendi
   for (const tx of txs) {
     const month = new Date(tx.date).toISOString().substring(0, 7);
     if (!byMonth[month]) byMonth[month] = { total: 0, by_category: {} };
-    const amt = Math.abs(tx.amount);
+    const amt = Math.abs(Number(tx.amount));
     byMonth[month].total += amt;
     const catName = tx.categoryId ? (catMap[tx.categoryId] ?? "Altro") : "Altro";
     byMonth[month].by_category[catName] = (byMonth[month].by_category[catName] ?? 0) + amt;
@@ -46,7 +46,7 @@ export async function generateSpendingForecast(familyId: string): Promise<Spendi
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const currentMonthSpending = txs
     .filter(tx => new Date(tx.date) >= startOfMonth)
-    .reduce((s, tx) => s + Math.abs(tx.amount), 0)
+    .reduce((s, tx) => s + Math.abs(Number(tx.amount)), 0)
     .toFixed(2);
 
   const dayOfMonth = now.getDate();

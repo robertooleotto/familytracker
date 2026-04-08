@@ -199,6 +199,12 @@ export async function saveCache(familyId: string, feature: string, result: any):
   }
 }
 
-export async function saveInsight(familyId: string, type: string, message: string, severity: "info" | "warning" | "error" = "info"): Promise<void> {
-  await db.insert(aiInsights).values({ familyId, type, message, severity });
+export async function saveInsight(
+  familyId: string,
+  type: string,
+  message: string,
+  severity: "info" | "warning" | "error" = "info",
+  metadata?: Record<string, unknown>,
+): Promise<void> {
+  await db.insert(aiInsights).values({ familyId, type, message, severity, metadata: metadata ?? null });
 }

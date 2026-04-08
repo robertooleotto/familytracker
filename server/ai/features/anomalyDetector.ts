@@ -40,7 +40,7 @@ export async function detectAnomalies(familyId: string): Promise<Anomaly[]> {
     const month = new Date(tx.date).toISOString().substring(0, 7);
     const cat = getCat(tx.categoryId);
     if (!byMonthCat[month]) byMonthCat[month] = {};
-    byMonthCat[month][cat] = (byMonthCat[month][cat] ?? 0) + Math.abs(tx.amount);
+    byMonthCat[month][cat] = (byMonthCat[month][cat] ?? 0) + Math.abs(Number(tx.amount));
   }
 
   const months = Object.keys(byMonthCat);
@@ -54,7 +54,7 @@ export async function detectAnomalies(familyId: string): Promise<Anomaly[]> {
   const currByCategory: Record<string, number> = {};
   for (const tx of current) {
     const cat = getCat(tx.categoryId);
-    currByCategory[cat] = (currByCategory[cat] ?? 0) + Math.abs(tx.amount);
+    currByCategory[cat] = (currByCategory[cat] ?? 0) + Math.abs(Number(tx.amount));
   }
 
   const candidates = Object.keys(currByCategory).filter(cat => {

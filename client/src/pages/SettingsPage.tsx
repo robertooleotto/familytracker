@@ -215,7 +215,7 @@ export default function SettingsPage() {
         )}
 
         {/* Autonomia bambini */}
-        {profile?.role === "parent" && familyMembersRaw && familyMembersRaw.some(m => m.profile.role === "child" || m.profile.role === "teen") && (
+        {profile?.role === "parent" && familyMembersRaw && familyMembersRaw.some(m => m.profile.role === "child") && (
           <section className="bg-card border border-border rounded-2xl p-4 space-y-3">
             <div className="flex items-center gap-2 mb-1">
               <Baby className="w-4 h-4 text-primary" />
@@ -225,7 +225,7 @@ export default function SettingsPage() {
               Configura quando ogni membro può spostarsi da solo. Kinly userà queste informazioni per rilevare se serve un accompagnatore.
             </p>
             {familyMembersRaw
-              .filter(m => m.profile.role === "child" || m.profile.role === "teen")
+              .filter(m => m.profile.role === "child")
               .map(m => {
                 const hasAutonomy = !!(m.profile as any).autonomy;
                 return (

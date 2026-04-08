@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
-import { auth } from "../lib/routeHelpers";
+import { requireAuth } from "../lib/requireAuth";
+
 import { db } from "../db";
 import { schoolConnections, schoolGrades, schoolAbsences, schoolHomework, schoolNotices } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
@@ -7,20 +8,18 @@ import { classevivaLogin, classevivaGrades, classevivaAbsences, classevivaHomewo
 import { argoLogin, argoGrades, argoAbsences, argoHomework, argoNotices } from "../school/argo";
 
 export function registerSchoolRoutes(app: Express): void {
-  app.get("/api/school/connections", async (req, res) => {
+  app.get("/api/school/connections", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const rows = await db.select().from(schoolConnections).where(eq(schoolConnections.familyId, payload.familyId)).orderBy(desc(schoolConnections.createdAt));
       const safe = rows.map(r => ({ ...r, password: "***" }));
       res.json(safe);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/school/connect", async (req, res) => {
+  app.post("/api/school/connect", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const { platform, username, password, schoolCode, studentName } = req.body;
       if (!platform || !username || !password || !studentName) return res.status(400).json({ message: "Campi obbligatori mancanti" });
 
@@ -58,10 +57,9 @@ export function registerSchoolRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.delete("/api/school/connections/:id", async (req, res) => {
+  app.delete("/api/school/connections/:id", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const conn = await db.select().from(schoolConnections).where(and(eq(schoolConnections.id, req.params.id), eq(schoolConnections.familyId, payload.familyId)));
       if (!conn.length) return res.status(404).json({ message: "Connessione non trovata" });
       await db.delete(schoolGrades).where(eq(schoolGrades.connectionId, req.params.id));
@@ -73,10 +71,9 @@ export function registerSchoolRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/school/sync/:id", async (req, res) => {
+  app.post("/api/school/sync/:id", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const [conn] = await db.select().from(schoolConnections).where(and(eq(schoolConnections.id, req.params.id), eq(schoolConnections.familyId, payload.familyId)));
       if (!conn) return res.status(404).json({ message: "Connessione non trovata" });
 
@@ -125,46 +122,41 @@ export function registerSchoolRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.get("/api/school/grades/:connectionId", async (req, res) => {
+  app.get("/api/school/grades/:connectionId", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const rows = await db.select().from(schoolGrades).where(and(eq(schoolGrades.connectionId, req.params.connectionId), eq(schoolGrades.familyId, payload.familyId))).orderBy(desc(schoolGrades.date));
       res.json(rows);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.get("/api/school/absences/:connectionId", async (req, res) => {
+  app.get("/api/school/absences/:connectionId", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const rows = await db.select().from(schoolAbsences).where(and(eq(schoolAbsences.connectionId, req.params.connectionId), eq(schoolAbsences.familyId, payload.familyId))).orderBy(desc(schoolAbsences.date));
       res.json(rows);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.get("/api/school/homework/:connectionId", async (req, res) => {
+  app.get("/api/school/homework/:connectionId", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const rows = await db.select().from(schoolHomework).where(and(eq(schoolHomework.connectionId, req.params.connectionId), eq(schoolHomework.familyId, payload.familyId))).orderBy(desc(schoolHomework.givenAt));
       res.json(rows);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.get("/api/school/notices/:connectionId", async (req, res) => {
+  app.get("/api/school/notices/:connectionId", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const rows = await db.select().from(schoolNotices).where(and(eq(schoolNotices.connectionId, req.params.connectionId), eq(schoolNotices.familyId, payload.familyId))).orderBy(desc(schoolNotices.date));
       res.json(rows);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.patch("/api/school/homework/:id/done", async (req, res) => {
+  app.patch("/api/school/homework/:id/done", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const { done } = req.body;
       await db.update(schoolHomework).set({ done: !!done }).where(and(eq(schoolHomework.id, req.params.id), eq(schoolHomework.familyId, payload.familyId)));
       res.json({ ok: true });

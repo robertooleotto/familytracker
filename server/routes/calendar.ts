@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
-import { auth, safe } from "../lib/routeHelpers";
+import { safe } from "../lib/routeHelpers";
 import { db } from "../db";
 import { events, profiles } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
@@ -12,16 +12,17 @@ import { learnAutonomyPatterns } from "../services/patternLearner";
 import { format } from "date-fns";
 import { callClaude } from "../ai/aiEngine";
 import { saveInsight } from "../ai/aiEngine";
+import { requireAuth } from "../lib/requireAuth";
 
 export function registerCalendarRoutes(app: Express): void {
-  app.get("/api/events", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/events", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getEventsByFamily(a.familyId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/events", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/events", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { title, description, startAt, endAt, color, reminderMin, assignedTo, category, allDay, locationName, aiSuggested, departureTime } = req.body;
       if (!title || !startAt) return res.status(400).json({ message: "Missing required fields" });
@@ -44,14 +45,14 @@ export function registerCalendarRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.delete("/api/events/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.delete("/api/events/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { await storage.deleteEvent(req.params.id, a.familyId); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.patch("/api/events/:id/pickup", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.patch("/api/events/:id/pickup", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const e = await storage.confirmPickup(req.params.id, a.familyId, a.profileId);
       res.json(e);
@@ -59,13 +60,13 @@ export function registerCalendarRoutes(app: Express): void {
   });
 
   // ─── CALENDAR AI ──────────────────────────────────────────────────────────
-  app.post("/api/calendar/analyze", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/calendar/analyze", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { event } = req.body;
       if (!event) return res.status(400).json({ message: "Missing event" });
       const existing = await storage.getEventsByFamily(a.familyId);
-      const members = await storage.getMembersByFamily(a.familyId);
+      const members = await storage.getFamilyMembers(a.familyId);
       const isInterrogazione = /interrogazione|verifica|compito in classe/i.test(event.title || "");
 
       // ── 1. needsDriver() per ogni partecipante (logica deterministica) ──
@@ -98,7 +99,7 @@ Rispondi con questo JSON:
 {"conflicts":[{"event_id":"","description":"","severity":"low|medium|high"}],"suggestions":[{"type":"","message":"","action":""}],"departure_time":"HH:MM o null","study_slots":[{"date":"YYYY-MM-DD","time":"HH:MM","duration_min":45,"reason":""}],"weather_alert":null,"load_warning":null}`;
       const raw = await callClaude(prompt, 600);
       let result: any = {};
-      try { result = JSON.parse(raw.trim()); } catch { result = {}; }
+      try { result = JSON.parse((raw ?? "").trim()); } catch { result = {}; }
 
       // ── 3. Crea slot di studio per interrogazioni ──
       if (isInterrogazione && Array.isArray(result?.study_slots) && result.study_slots.length > 0) {
@@ -144,12 +145,12 @@ Rispondi con questo JSON:
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/calendar/parse", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/calendar/parse", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { text } = req.body;
       if (!text?.trim()) return res.status(400).json({ message: "Missing text" });
-      const members = await storage.getMembersByFamily(a.familyId);
+      const members = await storage.getFamilyMembers(a.familyId);
       const today = new Date().toISOString().slice(0, 10);
       const prompt = `Sei l'assistente calendario Kinly. Converti questo testo italiano in un evento strutturato. Rispondi SOLO in JSON valido.
 TESTO: "${text}"
@@ -161,22 +162,22 @@ Rispondi con:
 Se non riesci a estrarre la data, usa domani. Se non sai l'ora, usa 09:00.`;
       const raw = await callClaude(prompt, 400);
       let result: any = {};
-      try { result = JSON.parse(raw.trim()); } catch { result = { title: text, category: "family", date: today, time: "09:00", duration_min: 60, assigned_to: [], confidence: 0.5 }; }
+      try { result = JSON.parse((raw ?? "").trim()); } catch { result = { title: text, category: "family", date: today, time: "09:00", duration_min: 60, assigned_to: [], confidence: 0.5 }; }
       res.json(result);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
   // ─── GAPS (driver/pickup mancanti) ───────────────────────────────────────
-  app.get("/api/gaps", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/gaps", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const gaps = await detectAllGaps(a.familyId);
       res.json(gaps);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/gaps/resolve", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/gaps/resolve", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { action_type, payload } = req.body;
       if (!action_type || !payload) return res.status(400).json({ message: "Missing action_type or payload" });
@@ -240,9 +241,13 @@ Se non riesci a estrarre la data, usa domani. Se non sai l'ora, usa 09:00.`;
         if (ev.locationName) {
           const [member] = await db.select().from(profiles).where(eq(profiles.id, member_id));
           if (member) {
-            await saveInsight(a.familyId, "autonomy_suggestion",
+            await saveInsight(
+              a.familyId,
+              "autonomy_suggestion",
               `Vuoi aggiungere '${ev.locationName}' ai percorsi autonomi di ${member.name}?`,
-              { member_id, location: ev.locationName, type: "add_trusted_route" }, "info");
+              "info",
+              { member_id, location: ev.locationName, type: "add_trusted_route" },
+            );
           }
         }
         return res.json({ success: true });
@@ -253,8 +258,8 @@ Se non riesci a estrarre la data, usa domani. Se non sai l'ora, usa 09:00.`;
   });
 
   // ─── AUTONOMIA PROFILO ────────────────────────────────────────────────────
-  app.patch("/api/profiles/:id/autonomy", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.patch("/api/profiles/:id/autonomy", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { autonomy, transport, birthDate } = req.body;
       const [member] = await db.select().from(profiles).where(and(eq(profiles.id, req.params.id), eq(profiles.familyId, a.familyId)));
@@ -288,16 +293,16 @@ Se non riesci a estrarre la data, usa domani. Se non sai l'ora, usa 09:00.`;
   });
 
   // ─── MILESTONE ────────────────────────────────────────────────────────────
-  app.get("/api/milestones", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/milestones", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const pending = await checkMilestones(a.familyId);
       res.json(pending);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/milestones/respond", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/milestones/respond", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { member_id, milestone_key, accepted, update_if_yes, update_field } = req.body;
       await respondMilestone(member_id, milestone_key, accepted, update_if_yes || {}, update_field || "autonomy");
@@ -306,8 +311,8 @@ Se non riesci a estrarre la data, usa domani. Se non sai l'ora, usa 09:00.`;
   });
 
   // ─── PATTERN LEARNER (manuale / cron) ────────────────────────────────────
-  app.get("/api/autonomy/patterns", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/autonomy/patterns", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const suggestions = await learnAutonomyPatterns(a.familyId);
       res.json(suggestions);

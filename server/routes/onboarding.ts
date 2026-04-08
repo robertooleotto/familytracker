@@ -3,13 +3,13 @@ import { storage } from "../storage";
 import { db } from "../db";
 import { aiCache, profiles } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
-import { auth, safe } from "../lib/routeHelpers";
+import { safe } from "../lib/routeHelpers";
 import { callClaude, saveInsight } from "../ai/aiEngine";
+import { requireAuth } from "../lib/requireAuth";
 
 export function registerOnboardingRoutes(app: Express): void {
-  app.post("/api/onboarding", async (req, res) => {
-    const a = await auth(req, res);
-    if (!a) return;
+  app.post("/api/onboarding", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const {
         wakeTime,

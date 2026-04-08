@@ -1,17 +1,18 @@
 import type { Express, Request, Response } from "express";
-import { auth } from "../lib/routeHelpers";
+import { requireAuth } from "../lib/requireAuth";
+
 import { storage } from "../storage";
 import { callClaude, callClaudeVision, parseJSON } from "../ai/aiEngine";
 
 export function registerKitchenRoutes(app: Express): void {
-  app.get("/api/kitchen/preferences", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/kitchen/preferences", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getFoodPreferences(a.familyId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.put("/api/kitchen/preferences", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.put("/api/kitchen/preferences", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { profileId, likes, dislikes, allergies, dietaryRestrictions } = req.body;
       const result = await storage.upsertFoodPreferences(a.familyId, profileId || null, { likes, dislikes, allergies, dietaryRestrictions });
@@ -19,8 +20,8 @@ export function registerKitchenRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/kitchen/scan", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/kitchen/scan", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { imageBase64, mediaType = "image/jpeg", mode = "recipes" } = req.body;
       if (!imageBase64) return res.status(400).json({ message: "imageBase64 obbligatorio" });
@@ -57,8 +58,8 @@ Identifica tutti gli ingredienti visibili e proponi 3 ricette creative che si po
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/kitchen/menu", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/kitchen/menu", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const prefs = await storage.getFoodPreferences(a.familyId);
       const members = await storage.getFamilyMembers(a.familyId);

@@ -1,11 +1,10 @@
 import type { Express } from "express";
 import { storage } from "../storage";
-import { auth } from "../lib/routeHelpers";
+import { requireAuth } from "../lib/requireAuth";
 
 export function registerGeofencesRoutes(app: Express): void {
-  app.get("/api/geofences", async (req, res) => {
-    const a = await auth(req, res);
-    if (!a) return;
+  app.get("/api/geofences", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       res.json(await storage.getGeofencesByFamily(a.familyId));
     } catch (e: any) {
@@ -13,9 +12,8 @@ export function registerGeofencesRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/geofences", async (req, res) => {
-    const a = await auth(req, res);
-    if (!a) return;
+  app.post("/api/geofences", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { name, centerLat, centerLng, radiusM, notifyOn, debounceMin } = req.body;
       if (!name || centerLat === undefined || centerLng === undefined)
@@ -35,9 +33,8 @@ export function registerGeofencesRoutes(app: Express): void {
     }
   });
 
-  app.delete("/api/geofences/:id", async (req, res) => {
-    const a = await auth(req, res);
-    if (!a) return;
+  app.delete("/api/geofences/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       await storage.deleteGeofence(req.params.id, a.familyId);
       res.json({ ok: true });

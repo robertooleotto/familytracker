@@ -7,6 +7,8 @@ import {
   generateToken,
   safe,
 } from "../lib/routeHelpers";
+import { validateBody } from "../lib/validate";
+import { registerSchema, loginSchema, joinSchema } from "../lib/authSchemas";
 
 /**
  * Helper: derive a unique username from email or name
@@ -22,13 +24,10 @@ const makeUsername = async (base: string): Promise<string> => {
 };
 
 export function registerAuthRoutes(app: Express): void {
-  app.post("/api/auth/register", async (req, res) => {
+  app.post("/api/auth/register", validateBody(registerSchema), async (req, res) => {
     try {
-      const { firstName, lastName, email, password, familyName, role, colorHex } = req.body;
-      if (!firstName || !lastName || !email || !password || !familyName)
-        return res.status(400).json({ message: "Tutti i campi obbligatori sono richiesti" });
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-        return res.status(400).json({ message: "Indirizzo email non valido" });
+      const { firstName, lastName, email, password, familyName, role, colorHex } =
+        req.validated.body as import("../lib/authSchemas").RegisterInput;
       const existing = await storage.getProfileByEmail(email);
       if (existing) return res.status(409).json({ message: "Email già registrata" });
       const username = await makeUsername(email.split("@")[0]);
@@ -54,10 +53,9 @@ export function registerAuthRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", validateBody(loginSchema), async (req, res) => {
     try {
-      const { email, password } = req.body;
-      if (!email || !password) return res.status(400).json({ message: "Credenziali mancanti" });
+      const { email, password } = req.validated.body as import("../lib/authSchemas").LoginInput;
       // Accept login by email or username
       let profile = await storage.getProfileByEmail(email);
       if (!profile) profile = await storage.getProfileByUsername(email);
@@ -78,11 +76,10 @@ export function registerAuthRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/auth/join", async (req, res) => {
+  app.post("/api/auth/join", validateBody(joinSchema), async (req, res) => {
     try {
-      const { firstName, lastName, email, password, inviteCode, role, colorHex } = req.body;
-      if (!firstName || !lastName || !password || !inviteCode)
-        return res.status(400).json({ message: "Tutti i campi obbligatori sono richiesti" });
+      const { firstName, lastName, email, password, inviteCode, role, colorHex } =
+        req.validated.body as import("../lib/authSchemas").JoinInput;
       const family = await storage.getFamilyByInviteCode(inviteCode.toUpperCase());
       if (!family) return res.status(404).json({ message: "Codice invito non valido" });
       if (email) {

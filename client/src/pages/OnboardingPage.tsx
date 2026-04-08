@@ -216,7 +216,7 @@ export default function OnboardingPage({ profile, onComplete }: Props) {
 
   const handleNext = () => {
     if (step === TOTAL_STEPS - 1) {
-      submitMutation.mutate();
+      submitMutation.mutate(undefined);
     } else {
       setStep(s => s + 1);
     }

@@ -1,16 +1,16 @@
 import type { Express, Request, Response } from "express";
 import { storage } from "../storage";
-import { auth } from "../lib/routeHelpers";
+import { requireAuth } from "../lib/requireAuth";
 
 export function registerLifestyleRoutes(app: Express): void {
   // ─── PETS ───────────────────────────────────────────────────────────────────
-  app.get("/api/pets", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/pets", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getPetsByFamily(a.familyId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.post("/api/pets", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/pets", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { name, species, breed, birthDate, color, vetName, vetPhone, notes } = req.body;
       if (!name) return res.status(400).json({ message: "Name required" });
@@ -18,8 +18,8 @@ export function registerLifestyleRoutes(app: Express): void {
       res.json(pet);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.patch("/api/pets/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.patch("/api/pets/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { name, species, breed, birthDate, color, vetName, vetPhone, notes } = req.body;
       const u: Record<string, any> = {};
@@ -34,19 +34,19 @@ export function registerLifestyleRoutes(app: Express): void {
       await storage.updatePet(req.params.id, a.familyId, u); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.delete("/api/pets/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.delete("/api/pets/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { await storage.deletePet(req.params.id, a.familyId); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.get("/api/pets/events", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/pets/events", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getPetEvents(a.familyId, req.query.petId as string | undefined)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.post("/api/pets/events", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/pets/events", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { petId, type, title, date, nextDueDate, notes } = req.body;
       if (!petId || !title || !date) return res.status(400).json({ message: "petId, title, date required" });
@@ -54,20 +54,20 @@ export function registerLifestyleRoutes(app: Express): void {
       res.json(ev);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.delete("/api/pets/events/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.delete("/api/pets/events/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { await storage.deletePetEvent(req.params.id, a.familyId); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
   // ─── VEHICLES ───────────────────────────────────────────────────────────────
-  app.get("/api/vehicles", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/vehicles", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getVehiclesByFamily(a.familyId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.post("/api/vehicles", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/vehicles", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { name, brand, model, plate, year, color, currentKm, insuranceExpiry, revisionExpiry, bolloExpiry } = req.body;
       if (!name) return res.status(400).json({ message: "Name required" });
@@ -75,8 +75,8 @@ export function registerLifestyleRoutes(app: Express): void {
       res.json(v);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.patch("/api/vehicles/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.patch("/api/vehicles/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const data = { ...req.body };
       if (data.insuranceExpiry) data.insuranceExpiry = new Date(data.insuranceExpiry);
@@ -86,19 +86,19 @@ export function registerLifestyleRoutes(app: Express): void {
       res.json({ ok: true });
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.delete("/api/vehicles/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.delete("/api/vehicles/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { await storage.deleteVehicle(req.params.id, a.familyId); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.get("/api/vehicles/logs", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/vehicles/logs", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getVehicleLogs(a.familyId, req.query.vehicleId as string | undefined)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.post("/api/vehicles/logs", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/vehicles/logs", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { vehicleId, type, title, date, amount, km, notes } = req.body;
       if (!vehicleId || !title) return res.status(400).json({ message: "vehicleId and title required" });
@@ -106,20 +106,20 @@ export function registerLifestyleRoutes(app: Express): void {
       res.json(log);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.delete("/api/vehicles/logs/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.delete("/api/vehicles/logs/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { await storage.deleteVehicleLog(req.params.id, a.familyId); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
   // ─── SUBSCRIPTIONS ──────────────────────────────────────────────────────────
-  app.get("/api/subscriptions", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/subscriptions", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getSubscriptionsByFamily(a.familyId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.post("/api/subscriptions", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/subscriptions", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { name, amount, billingCycle, renewalDate, color, icon, active } = req.body;
       if (!name || amount === undefined) return res.status(400).json({ message: "name and amount required" });
@@ -127,8 +127,8 @@ export function registerLifestyleRoutes(app: Express): void {
       res.json(s);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.patch("/api/subscriptions/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.patch("/api/subscriptions/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { name, amount, billingCycle, renewalDate, color, icon, active } = req.body;
       const u: Record<string, any> = {};
@@ -142,8 +142,8 @@ export function registerLifestyleRoutes(app: Express): void {
       await storage.updateSubscription(req.params.id, a.familyId, u); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
-  app.delete("/api/subscriptions/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.delete("/api/subscriptions/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { await storage.deleteSubscription(req.params.id, a.familyId); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });

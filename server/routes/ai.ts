@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
-import { auth } from "../lib/routeHelpers";
+import { requireAuth } from "../lib/requireAuth";
+
 import { db } from "../db";
 import { aiInsights, profiles } from "@shared/schema";
 import { eq, desc, inArray } from "drizzle-orm";
@@ -27,19 +28,17 @@ import { storage } from "../storage";
 
 export function registerAIRoutes(app: Express): void {
   // ─── Status ─────────────────────────────────────────────────────────────────
-  app.get("/api/ai/status", async (req, res) => {
+  app.get("/api/ai/status", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       res.json({ available: !!process.env.CLAUDE_API_KEY });
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
   // ─── Evening Summary ────────────────────────────────────────────────────────
-  app.get("/api/ai/summary", async (req, res) => {
+  app.get("/api/ai/summary", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const cached = await getCached(payload.familyId, "evening_summary", 12);
       if (cached) return res.json(cached);
       const fresh = await generateEveningSummary(payload.familyId);
@@ -48,60 +47,54 @@ export function registerAIRoutes(app: Express): void {
   });
 
   // ─── Spending Forecast ──────────────────────────────────────────────────────
-  app.get("/api/ai/forecast", async (req, res) => {
+  app.get("/api/ai/forecast", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const result = await generateSpendingForecast(payload.familyId);
       res.json(result ?? { error: "insufficient_data" });
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
   // ─── Anomaly Detection ──────────────────────────────────────────────────────
-  app.get("/api/ai/anomalies", async (req, res) => {
+  app.get("/api/ai/anomalies", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const result = await detectAnomalies(payload.familyId);
       res.json(result);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
   // ─── Health Score ───────────────────────────────────────────────────────────
-  app.get("/api/ai/score", async (req, res) => {
+  app.get("/api/ai/score", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const result = await calculateHealthScore(payload.familyId);
       res.json(result ?? { score: null });
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
   // ─── Study Planner ──────────────────────────────────────────────────────────
-  app.get("/api/ai/study/:childId", async (req, res) => {
+  app.get("/api/ai/study/:childId", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const result = await generateStudyPlan(payload.familyId, req.params.childId);
       res.json(result ?? { study_sessions: [] });
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
   // ─── Shopping AI ────────────────────────────────────────────────────────────
-  app.get("/api/ai/shopping", async (req, res) => {
+  app.get("/api/ai/shopping", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const result = await suggestShoppingItems(payload.familyId);
       res.json(result);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
   // ─── Insights ───────────────────────────────────────────────────────────────
-  app.get("/api/ai/insights", async (req, res) => {
+  app.get("/api/ai/insights", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const rows = await db
         .select()
         .from(aiInsights)
@@ -112,10 +105,9 @@ export function registerAIRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/ai/insights/:id/read", async (req, res) => {
+  app.post("/api/ai/insights/:id/read", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       await db
         .update(aiInsights)
         .set({ readAt: new Date() })
@@ -125,10 +117,9 @@ export function registerAIRoutes(app: Express): void {
   });
 
   // ─── Member Narrative ───────────────────────────────────────────────────────
-  app.get("/api/ai/narrative/:memberId", async (req, res) => {
+  app.get("/api/ai/narrative/:memberId", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const narrative = await generateMemberNarrative(payload.familyId, req.params.memberId);
       res.json({ narrative: narrative || "Nessun dato disponibile per generare la narrativa." });
     } catch (e: any) { res.status(500).json({ message: e.message }); }
@@ -144,10 +135,9 @@ export function registerAIRoutes(app: Express): void {
    * Body: { message: string, conversationId?: string }
    * Returns: { response: string, conversationId: string }
    */
-  app.post("/api/ai/chat", async (req, res) => {
+  app.post("/api/ai/chat", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const { message, conversationId } = req.body;
       if (!message || typeof message !== "string" || message.trim().length === 0) {
         return res.status(400).json({ message: "Il messaggio è obbligatorio." });
@@ -179,10 +169,9 @@ export function registerAIRoutes(app: Express): void {
    * GET /api/ai/chat/conversations
    * List user's chat conversations.
    */
-  app.get("/api/ai/chat/conversations", async (req, res) => {
+  app.get("/api/ai/chat/conversations", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const includeArchived = req.query.archived === "true";
       const conversations = await listConversations(
         payload.familyId,
@@ -198,10 +187,9 @@ export function registerAIRoutes(app: Express): void {
    * GET /api/ai/chat/conversations/:id/messages
    * Load messages for a conversation.
    */
-  app.get("/api/ai/chat/conversations/:id/messages", async (req, res) => {
+  app.get("/api/ai/chat/conversations/:id/messages", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const messages = await loadConversationHistory(req.params.id, 50);
       res.json(messages);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
@@ -211,20 +199,18 @@ export function registerAIRoutes(app: Express): void {
    * POST /api/ai/chat/conversations/:id/close
    * Close/archive a conversation.
    */
-  app.post("/api/ai/chat/conversations/:id/close", async (req, res) => {
+  app.post("/api/ai/chat/conversations/:id/close", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       await closeConversation(req.params.id);
       res.json({ ok: true });
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
   // Keep legacy endpoint working (redirect to new chat)
-  app.post("/api/briefing/chat", async (req, res) => {
+  app.post("/api/briefing/chat", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const { message } = req.body;
       if (!message) return res.status(400).json({ message: "Message required" });
 
@@ -245,10 +231,9 @@ export function registerAIRoutes(app: Express): void {
    * Send a message to the AI tutor.
    * Body: { childId: string, subject: string, message: string, conversationId?: string, topic?: string, difficulty?: string }
    */
-  app.post("/api/ai/tutor/chat", async (req, res) => {
+  app.post("/api/ai/tutor/chat", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const { childId, subject, message, conversationId, topic, difficulty } = req.body;
 
       if (!childId || !subject || !message) {
@@ -294,10 +279,9 @@ export function registerAIRoutes(app: Express): void {
    * End a tutor session and optionally generate a parent report.
    * Body: { generateReport?: boolean }
    */
-  app.post("/api/ai/tutor/sessions/:id/end", async (req, res) => {
+  app.post("/api/ai/tutor/sessions/:id/end", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const doReport = req.body.generateReport !== false;
       const result = await endTutorSession(req.params.id, doReport);
       if (!result) {
@@ -311,10 +295,9 @@ export function registerAIRoutes(app: Express): void {
    * GET /api/ai/tutor/sessions/:id/report
    * Get/generate the parent report for a tutor session.
    */
-  app.get("/api/ai/tutor/sessions/:id/report", async (req, res) => {
+  app.get("/api/ai/tutor/sessions/:id/report", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const report = await generateTutorReport(req.params.id);
       if (!report) {
         return res.status(404).json({ message: "Report non disponibile. La sessione potrebbe essere troppo breve." });
@@ -327,10 +310,9 @@ export function registerAIRoutes(app: Express): void {
    * GET /api/ai/tutor/sessions?childId=xxx
    * List tutor sessions for a child.
    */
-  app.get("/api/ai/tutor/sessions", async (req, res) => {
+  app.get("/api/ai/tutor/sessions", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const childId = req.query.childId as string;
       if (!childId) {
         return res.status(400).json({ message: "childId è obbligatorio." });
@@ -344,10 +326,9 @@ export function registerAIRoutes(app: Express): void {
    * GET /api/ai/tutor/conversations
    * List tutor conversations for the current user.
    */
-  app.get("/api/ai/tutor/conversations", async (req, res) => {
+  app.get("/api/ai/tutor/conversations", requireAuth, async (req, res) => {
     try {
-      const payload = await auth(req, res);
-      if (!payload) return;
+      const payload = req.auth!;
       const includeArchived = req.query.archived === "true";
       const conversations = await listConversations(
         payload.familyId,

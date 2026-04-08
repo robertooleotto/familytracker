@@ -274,7 +274,7 @@ export default function VehiclesPage() {
                                   <div className="flex items-center justify-between">
                                     <p className="text-sm font-semibold truncate">{log.title}</p>
                                     <span className="text-sm font-bold text-primary">
-                                      {log.amount ? formatEur(log.amount) : log.km ? `${log.km} km` : ""}
+                                      {log.amount ? formatEur(Number(log.amount)) : log.km ? `${log.km} km` : ""}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-2 mt-0.5">

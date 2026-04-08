@@ -1,16 +1,16 @@
 import type { Express } from "express";
 import { storage } from "../storage";
-import { auth } from "../lib/routeHelpers";
+import { requireAuth } from "../lib/requireAuth";
 
 export function registerShoppingRoutes(app: Express): void {
-  app.get("/api/shopping", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.get("/api/shopping", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { res.json(await storage.getShoppingItems(a.familyId)); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.post("/api/shopping", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.post("/api/shopping", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { name, qty, unit, category } = req.body;
       if (!name) return res.status(400).json({ message: "Name required" });
@@ -18,8 +18,8 @@ export function registerShoppingRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.patch("/api/shopping/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.patch("/api/shopping/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { checked } = req.body;
       await storage.updateShoppingItem(req.params.id, a.familyId, { checked, ...(checked ? { checkedBy: a.profileId } : {}) });
@@ -27,14 +27,14 @@ export function registerShoppingRoutes(app: Express): void {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.delete("/api/shopping/checked/all", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.delete("/api/shopping/checked/all", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { await storage.clearCheckedItems(a.familyId); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
-  app.delete("/api/shopping/:id", async (req, res) => {
-    const a = await auth(req, res); if (!a) return;
+  app.delete("/api/shopping/:id", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try { await storage.deleteShoppingItem(req.params.id, a.familyId); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });

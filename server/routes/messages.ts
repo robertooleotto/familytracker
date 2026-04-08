@@ -1,12 +1,12 @@
 import type { Express } from "express";
 import { storage } from "../storage";
-import { auth, sanitize } from "../lib/routeHelpers";
+import { sanitize } from "../lib/routeHelpers";
 import { broadcastToFamily } from "../wsServer";
+import { requireAuth } from "../lib/requireAuth";
 
 export function registerMessagesRoutes(app: Express): void {
-  app.get("/api/messages", async (req, res) => {
-    const a = await auth(req, res);
-    if (!a) return;
+  app.get("/api/messages", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       res.json(await storage.getMessagesByFamily(a.familyId));
     } catch (e: any) {
@@ -14,9 +14,8 @@ export function registerMessagesRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/messages", async (req, res) => {
-    const a = await auth(req, res);
-    if (!a) return;
+  app.post("/api/messages", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       const { body } = req.body;
       if (!body?.trim()) return res.status(400).json({ message: "Empty message" });
@@ -35,9 +34,8 @@ export function registerMessagesRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/messages/:id/read", async (req, res) => {
-    const a = await auth(req, res);
-    if (!a) return;
+  app.post("/api/messages/:id/read", requireAuth, async (req, res) => {
+    const a = req.auth!;
     try {
       await storage.markMessageRead(req.params.id, a.profileId);
       res.json({ ok: true });

@@ -21,8 +21,9 @@ import {
 import {
   FileText, Plus, Lock, Globe, Trash2, Download, Eye, ChevronRight,
   IdCard, Heart, BookOpen, Receipt, Wrench, ShieldCheck, Home, User,
-  AlertTriangle, Upload, X,
+  AlertTriangle, Upload, X, ScanLine,
 } from "lucide-react";
+import { DocumentScanner } from "@/components/DocumentScanner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Profile { id: string; name: string; colorHex: string; role: string; }
@@ -85,23 +86,34 @@ function isExpired(dateStr: string | null): boolean {
 }
 
 // ─── Upload helpers ───────────────────────────────────────────────────────────
-async function uploadToObjectStorage(file: File, token: string): Promise<{ objectPath: string; fileName: string; mimeType: string; fileSize: number }> {
-  // Step 1: get presigned URL from our backend
+/**
+ * Two-step upload to Supabase Storage:
+ *  1. Ask our backend to mint a signed upload URL (server holds the service-role key).
+ *  2. PUT the file directly to that URL — the request bypasses our server entirely
+ *     so there's no streaming bottleneck and no need to buffer the upload in Express.
+ */
+async function uploadToObjectStorage(
+  file: File,
+  token: string,
+): Promise<{ objectPath: string; fileName: string; mimeType: string; fileSize: number }> {
   const res = await fetch("/api/documents/upload-url", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+    body: JSON.stringify({ fileName: file.name, contentType: file.type, fileSize: file.size }),
   });
-  if (!res.ok) throw new Error("Impossibile ottenere URL di upload");
-  const { uploadURL, objectPath } = await res.json();
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.message ?? "Impossibile ottenere URL di upload");
+  }
+  const { signedUrl, objectPath } = await res.json();
 
-  // Step 2: PUT file directly to cloud (no auth header needed for GCS presigned)
-  const putRes = await fetch(uploadURL, {
+  // Supabase signed upload URLs accept a plain PUT with the raw bytes as body.
+  const putRes = await fetch(signedUrl, {
     method: "PUT",
     headers: { "Content-Type": file.type || "application/octet-stream" },
     body: file,
   });
-  if (!putRes.ok) throw new Error("Errore upload file nel cloud");
+  if (!putRes.ok) throw new Error("Errore upload file nello storage");
 
   return { objectPath, fileName: file.name, mimeType: file.type, fileSize: file.size };
 }
@@ -177,6 +189,7 @@ function AddDocDialog({
   const [expiresAt, setExpiresAt] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const cats = section === "personal" ? PERSONAL_CATEGORIES : HOUSE_CATEGORIES;
@@ -295,7 +308,7 @@ function AddDocDialog({
           </div>
           {/* File upload */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Allegato (foto o PDF, max 50MB)</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Allegato (foto o PDF, max 20MB)</label>
             {file ? (
               <div className="flex items-center gap-2 p-2 rounded-lg border border-border bg-slate-50 dark:bg-slate-800">
                 <FileText className="w-4 h-4 text-slate-500 flex-shrink-0" />
@@ -306,14 +319,24 @@ function AddDocDialog({
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => fileRef.current?.click()}
-                className="w-full p-3 border-2 border-dashed border-border rounded-lg flex items-center justify-center gap-2 text-sm text-muted-foreground hover:border-primary/50 hover:bg-primary/5 transition-colors"
-                data-testid="button-upload-file"
-              >
-                <Upload className="w-4 h-4" />
-                Carica dal dispositivo
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setScannerOpen(true)}
+                  className="p-3 border-2 border-dashed border-primary/40 rounded-lg flex flex-col items-center gap-1 text-xs text-primary hover:bg-primary/5 transition-colors"
+                  data-testid="button-scan-document"
+                >
+                  <ScanLine className="w-5 h-5" />
+                  Scansiona
+                </button>
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  className="p-3 border-2 border-dashed border-border rounded-lg flex flex-col items-center gap-1 text-xs text-muted-foreground hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                  data-testid="button-upload-file"
+                >
+                  <Upload className="w-5 h-5" />
+                  Galleria / file
+                </button>
+              </div>
             )}
             <input
               ref={fileRef} type="file"
@@ -322,6 +345,12 @@ function AddDocDialog({
               onChange={e => { if (e.target.files?.[0]) setFile(e.target.files[0]); }}
             />
           </div>
+          <DocumentScanner
+            open={scannerOpen}
+            onCancel={() => setScannerOpen(false)}
+            onCapture={(captured) => setFile(captured)}
+            filenameHint={title.trim() || category || "documento"}
+          />
         </div>
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => { onClose(); reset(); }} data-testid="button-cancel-doc">Annulla</Button>
@@ -346,25 +375,20 @@ function ViewDocDialog({ doc, section, ownerName, myProfileId, onClose }: {
   if (!doc) return null;
   const Icon = categoryIcon(doc.category, section);
 
-  function handleDownload() {
+  async function handleDownload() {
     if (!doc) return;
-    const link = document.createElement("a");
-    link.href = `/api/documents/${doc.id}/file`;
-    link.target = "_blank";
-    // We open the file in a new tab since we need auth header
-    // Instead, fetch and create object URL
-    fetch(`/api/documents/${doc.id}/file`, {
-      headers: getAuthHeaders(),
-    }).then(async r => {
-      if (!r.ok) { toast({ title: "Errore download", variant: "destructive" }); return; }
-      const blob = await r.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = doc.fileName || doc.title;
-      a.click();
-      URL.revokeObjectURL(url);
-    });
+    try {
+      // Step 1: ask the API for a fresh signed download URL.
+      const r = await fetch(`/api/documents/${doc.id}`, { headers: getAuthHeaders() });
+      if (!r.ok) throw new Error("Errore download");
+      const meta = await r.json();
+      if (!meta.downloadUrl) throw new Error("Documento senza file");
+      // Step 2: open the signed URL directly. It works in a new tab without
+      // an auth header because the URL embeds a short-lived token.
+      window.open(meta.downloadUrl, "_blank", "noopener,noreferrer");
+    } catch (e: any) {
+      toast({ title: "Errore", description: e.message, variant: "destructive" });
+    }
   }
 
   return (
