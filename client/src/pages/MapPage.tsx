@@ -141,7 +141,7 @@ export default function MapPage({ isActive = true }: { isActive?: boolean }) {
   useEffect(() => {
     if (isActive && leafletMap.current) {
       // Small delay allows the browser to update layout before invalidating
-      const t = setTimeout(() => leafletMap.current?.invalidateSize(), 50);
+      const t = setTimeout(() => leafletMap.current?.invalidateSize(), 150);
       return () => clearTimeout(t);
     }
   }, [isActive]);
@@ -315,7 +315,7 @@ export default function MapPage({ isActive = true }: { isActive?: boolean }) {
   };
 
   return (
-    <div className="flex flex-col h-full relative bg-[#f8f9fa] overflow-hidden" style={{ isolation: "isolate", contain: "strict" }}>
+    <div className="flex flex-col h-full relative bg-[#f8f9fa] overflow-hidden" style={{ isolation: "isolate", contain: "layout style paint" }}>
       <style>{`
         @keyframes mapPulse {
           0%   { transform:scale(1); opacity:0.6 }
