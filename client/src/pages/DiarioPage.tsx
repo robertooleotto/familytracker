@@ -57,7 +57,8 @@ export default function DiarioPage() {
     distanceKm: "", durationMin: "", note: "", startedAt: new Date().toISOString().slice(0, 16),
   });
 
-  const { data: tripsData = [], isLoading } = useQuery<TripRow[]>({ queryKey: ["/api/trips"] });
+  const { data: tripsDataRaw = [], isLoading } = useQuery<TripRow[]>({ queryKey: ["/api/trips"] });
+  const tripsData = Array.isArray(tripsDataRaw) ? tripsDataRaw : [];
   const { data: memory } = useQuery<Memory>({ queryKey: ["/api/trips/memory"] });
 
   const createMutation = useMutation({

@@ -463,13 +463,15 @@ export default function DocumentiPage() {
   const [viewDoc, setViewDoc] = useState<Doc | null>(null);
   const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
 
-  const { data: members = [] } = useQuery<Profile[]>({ queryKey: ["/api/family/profiles"] });
-  const { data: docs = [], isLoading } = useQuery<Doc[]>({
+  const { data: membersRaw = [] } = useQuery<Profile[]>({ queryKey: ["/api/family/profiles"] });
+  const members = Array.isArray(membersRaw) ? membersRaw : [];
+  const { data: docsRaw = [], isLoading } = useQuery<Doc[]>({
     queryKey: ["/api/documents", activeTab],
     queryFn: () => fetch(`/api/documents?section=${activeTab}`, {
       headers: getAuthHeaders(),
     }).then(r => r.json()),
   });
+  const docs = Array.isArray(docsRaw) ? docsRaw : [];
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/documents/${id}`),
