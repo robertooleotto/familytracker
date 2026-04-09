@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import type { DinnerRotation, Profile } from "@shared/schema";
 import { format, startOfWeek, addDays, isSameDay } from "date-fns";
-import { it } from "date-fns/locale";
+import { it } from "date-fns/locale/it";
 
 const DAYS = [
   { label: "Lunedì", value: 1 },

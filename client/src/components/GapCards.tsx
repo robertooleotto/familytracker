@@ -3,7 +3,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Car, AlertTriangle, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
-import { it } from "date-fns/locale";
+import { it } from "date-fns/locale/it";
 
 // ── Tipo Gap (mirrors the server response) ───────────────────────────────────
 interface Gap {

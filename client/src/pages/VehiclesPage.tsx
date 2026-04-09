@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import type { Vehicle, VehicleLog, Profile } from "@shared/schema";
 import { format, differenceInDays } from "date-fns";
-import { it } from "date-fns/locale";
+import { it } from "date-fns/locale/it";
 
 const LOG_ICONS: Record<string, any> = {
   fuel: Droplets,

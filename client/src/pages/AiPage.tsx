@@ -8,7 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Sparkles, TrendingUp, AlertTriangle, Heart, ShoppingCart,
-  Lightbulb, RefreshCw, CheckCircle, BookOpen, Moon, ThumbsUp, ThumbsDown
+  Lightbulb, RefreshCw, CheckCircle, Moon, ThumbsUp, ThumbsDown,
+  Bell, MapPin, CloudRain, Scissors, School, Briefcase, Dumbbell, Stethoscope,
+  UtensilsCrossed, Pill, Trees, X, Check, Trash2, Clock
 } from "lucide-react";
 
 interface AiInsight {
@@ -45,6 +47,60 @@ interface EveningSummary {
   date?: string;
 }
 
+interface SmartNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  actionType: string | null;
+  actionPayload: Record<string, unknown>;
+  priority: string;
+  createdAt: string;
+  readAt: string | null;
+  actedAt: string | null;
+}
+
+interface FamilyPlace {
+  id: string;
+  name: string;
+  category: string | null;
+  lat: number;
+  lng: number;
+  visitCount: number;
+  avgDurationMin: number | null;
+  lastVisitAt: string | null;
+  source: string;
+}
+
+const CATEGORY_ICONS: Record<string, typeof MapPin> = {
+  supermarket: ShoppingCart, barber: Scissors, school: School,
+  work: Briefcase, gym: Dumbbell, doctor: Stethoscope,
+  restaurant: UtensilsCrossed, pharmacy: Pill, park: Trees,
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  supermarket: "Supermercato", barber: "Barbiere", school: "Scuola",
+  work: "Lavoro", gym: "Palestra", doctor: "Dottore",
+  restaurant: "Ristorante", pharmacy: "Farmacia", park: "Parco",
+  home: "Casa", other: "Altro",
+};
+
+const NOTIF_TYPE_COLORS: Record<string, string> = {
+  weather_alert: "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800",
+  place_visit: "bg-violet-50 dark:bg-violet-950/30 border-violet-200 dark:border-violet-800",
+  routine_anomaly: "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800",
+  recurring_reminder: "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800",
+  medication_reminder: "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800",
+};
+
+const NOTIF_TYPE_ICONS: Record<string, typeof Bell> = {
+  weather_alert: CloudRain,
+  place_visit: MapPin,
+  routine_anomaly: AlertTriangle,
+  recurring_reminder: Clock,
+  medication_reminder: Pill,
+};
+
 const TREND_LABELS: Record<string, { label: string; color: string }> = {
   above_average: { label: "Sopra la media", color: "text-red-500" },
   below_average: { label: "Sotto la media", color: "text-green-500" },
@@ -54,7 +110,7 @@ const TREND_LABELS: Record<string, { label: string; color: string }> = {
 export default function AiPage() {
   const { profile } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<"summary" | "forecast" | "score" | "shopping" | "insights">("summary");
+  const [activeTab, setActiveTab] = useState<"notifications" | "summary" | "forecast" | "score" | "shopping" | "places" | "insights">("notifications");
   const [ratedInsights, setRatedInsights] = useState<Record<string, number>>({});
 
   const { data: status } = useQuery<{ available: boolean }>({ queryKey: ["/api/ai/status"] });
@@ -100,11 +156,42 @@ export default function AiPage() {
     },
   });
 
+  const { data: notifications, isLoading: loadingNotifs, refetch: refetchNotifs } =
+    useQuery<SmartNotification[]>({ queryKey: ["/api/ai/notifications"], enabled: aiAvailable });
+
+  const { data: places, isLoading: loadingPlaces, refetch: refetchPlaces } =
+    useQuery<FamilyPlace[]>({ queryKey: ["/api/ai/places"], enabled: aiAvailable && activeTab === "places" });
+
+  const dismissNotifMutation = useMutation({
+    mutationFn: async (id: string) => { await apiRequest("POST", `/api/ai/notifications/${id}/dismiss`, {}); },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/ai/notifications"] }),
+  });
+
+  const actNotifMutation = useMutation({
+    mutationFn: async (id: string) => { await apiRequest("POST", `/api/ai/notifications/${id}/act`, {}); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/ai/notifications"] });
+      toast({ title: "Azione completata!" });
+    },
+  });
+
+  const deletePlaceMutation = useMutation({
+    mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/ai/places/${id}`); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/ai/places"] });
+      toast({ title: "Luogo rimosso" });
+    },
+  });
+
+  const unreadNotifCount = notifications?.filter(n => !n.readAt && !n.actedAt).length ?? 0;
+
   const tabs = [
+    { key: "notifications", label: "Notifiche", icon: Bell },
     { key: "summary", label: "Riepilogo", icon: Moon },
     { key: "forecast", label: "Previsione", icon: TrendingUp },
     { key: "score", label: "Salute", icon: Heart },
     { key: "shopping", label: "Spesa AI", icon: ShoppingCart },
+    { key: "places", label: "Luoghi", icon: MapPin },
     { key: "insights", label: "Storico", icon: Lightbulb },
   ] as const;
 
@@ -135,11 +222,14 @@ export default function AiPage() {
             <div className="mt-4 space-y-2 text-left bg-muted/50 rounded-xl p-3">
               <p className="text-xs font-semibold text-muted-foreground">Funzioni disponibili dopo attivazione:</p>
               {[
+                "Notifiche proattive intelligenti",
+                "Riconoscimento automatico luoghi (GPS)",
+                "Avvisi meteo per eventi all'aperto",
                 "Riepilogo serale della giornata",
                 "Previsione spese mensili",
-                "Rilevamento anomalie di spesa",
                 "Score salute finanziaria (0-100)",
                 "Suggerimenti lista spesa automatici",
+                "Promemoria visite ricorrenti",
               ].map(f => (
                 <div key={f} className="flex items-center gap-2 text-xs">
                   <CheckCircle className="w-3 h-3 text-violet-400 flex-shrink-0" />
@@ -185,10 +275,103 @@ export default function AiPage() {
               >
                 <Icon className="w-3 h-3" />
                 {tab.label}
+                {tab.key === "notifications" && unreadNotifCount > 0 && (
+                  <span className={`ml-0.5 w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center ${
+                    activeTab === "notifications" ? "bg-white text-violet-600" : "bg-red-500 text-white"
+                  }`}>{unreadNotifCount > 9 ? "9+" : unreadNotifCount}</span>
+                )}
               </button>
             );
           })}
         </div>
+
+        {/* ── NOTIFICHE SMART ── */}
+        {activeTab === "notifications" && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <Bell className="w-4 h-4 text-violet-500" /> Notifiche intelligenti
+              </h3>
+              <button onClick={() => refetchNotifs()} className="p-1 rounded hover:bg-accent transition-colors">
+                <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+            </div>
+            {loadingNotifs ? (
+              <div className="space-y-2">
+                {[1,2,3].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}
+              </div>
+            ) : notifications && notifications.length > 0 ? (
+              <div className="space-y-2">
+                {notifications.map(notif => {
+                  const NIcon = NOTIF_TYPE_ICONS[notif.type] || Bell;
+                  const colorClass = NOTIF_TYPE_COLORS[notif.type] || "bg-card border-border";
+                  const isActed = !!notif.actedAt;
+                  return (
+                    <div key={notif.id} className={`relative p-3 rounded-xl border transition-all ${colorClass} ${isActed ? "opacity-50" : ""}`}>
+                      <div className="flex items-start gap-2.5">
+                        <NIcon className="w-4 h-4 flex-shrink-0 mt-0.5 text-current opacity-70" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm">{notif.title}</p>
+                            {notif.priority === "high" || notif.priority === "urgent" ? (
+                              <span className="text-[10px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded">
+                                {notif.priority === "urgent" ? "URGENTE" : "ALTA"}
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{notif.message}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-[10px] text-muted-foreground">
+                              {new Date(notif.createdAt).toLocaleDateString("it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                            {!isActed && notif.actionType && (
+                              <Button
+                                size="sm"
+                                variant="default"
+                                className="h-6 text-[11px] px-2"
+                                onClick={() => actNotifMutation.mutate(notif.id)}
+                                disabled={actNotifMutation.isPending}
+                              >
+                                <Check className="w-3 h-3 mr-1" />
+                                {notif.actionType === "confirm_place" ? "Conferma luogo" :
+                                 notif.actionType === "reschedule_event" ? "Riprogramma" :
+                                 notif.actionType === "show_shopping" ? "Lista spesa" :
+                                 notif.actionType === "call_contact" ? "Chiama" :
+                                 "OK"}
+                              </Button>
+                            )}
+                            {!isActed && (
+                              <button
+                                onClick={() => dismissNotifMutation.mutate(notif.id)}
+                                className="p-0.5 rounded hover:bg-background/50 transition-colors"
+                                title="Ignora"
+                              >
+                                <X className="w-3 h-3 text-muted-foreground" />
+                              </button>
+                            )}
+                            {isActed && (
+                              <span className="text-[10px] text-green-600 font-medium flex items-center gap-0.5">
+                                <CheckCircle className="w-3 h-3" /> Completato
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-border p-6 text-center">
+                <Bell className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-40" />
+                <p className="text-sm text-muted-foreground">Nessuna notifica</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Le notifiche proattive appariranno qui: meteo, promemoria visite, anomalie di routine
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── RIEPILOGO SERALE ── */}
         {activeTab === "summary" && (
@@ -376,6 +559,67 @@ export default function AiPage() {
                 <ShoppingCart className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-40" />
                 <p className="text-sm text-muted-foreground">Nessun suggerimento disponibile</p>
                 <p className="text-xs text-muted-foreground mt-1">Usa la lista spesa per almeno 30 giorni</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── LUOGHI SMART ── */}
+        {activeTab === "places" && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-emerald-500" /> Luoghi della famiglia
+              </h3>
+              <button onClick={() => refetchPlaces()} className="p-1 rounded hover:bg-accent transition-colors">
+                <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+            </div>
+            {loadingPlaces ? (
+              <div className="space-y-2">
+                {[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}
+              </div>
+            ) : places && places.length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Luoghi riconosciuti automaticamente dal GPS. L'AI impara dove vai e può proporti azioni utili.
+                </p>
+                {places.map(place => {
+                  const PIcon = CATEGORY_ICONS[place.category || "other"] || MapPin;
+                  return (
+                    <div key={place.id} className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl">
+                      <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
+                        <PIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{place.name}</p>
+                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                          <span>{CATEGORY_LABELS[place.category || "other"] || place.category}</span>
+                          {place.visitCount > 0 && <span>• {place.visitCount} {place.visitCount === 1 ? "visita" : "visite"}</span>}
+                          {place.avgDurationMin && <span>• ~{place.avgDurationMin} min</span>}
+                          <span className={`px-1 rounded ${place.source === "manual" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600" : "bg-gray-100 dark:bg-gray-800 text-gray-500"}`}>
+                            {place.source === "manual" ? "confermato" : "auto"}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => deletePlaceMutation.mutate(place.id)}
+                        className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                        title="Rimuovi luogo"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-red-500" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-border p-6 text-center">
+                <MapPin className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-40" />
+                <p className="text-sm text-muted-foreground">Nessun luogo riconosciuto</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  I luoghi vengono riconosciuti automaticamente dal GPS quando ti fermi in un posto
+                </p>
               </div>
             )}
           </div>

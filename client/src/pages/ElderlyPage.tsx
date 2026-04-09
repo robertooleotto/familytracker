@@ -11,7 +11,7 @@ import {
   MapPin, Shield, Bell, FileText,
 } from "lucide-react";
 import { format } from "date-fns";
-import { it } from "date-fns/locale";
+import { it } from "date-fns/locale/it";
 
 type VitalType = "blood_pressure" | "blood_sugar" | "heart_rate" | "weight" | "temperature" | "oxygen";
 const VITAL_CONFIG: Record<VitalType, { label: string; unit: string; icon: any; color: string; hasValue2?: boolean; v2Label?: string }> = {

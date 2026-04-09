@@ -10,7 +10,7 @@ import {
   Search, X, ArrowRight, Shield, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { it } from "date-fns/locale";
+import { it } from "date-fns/locale/it";
 import type { BankConnection } from "@shared/schema";
 
 type SafeConn = Omit<BankConnection, "accessToken" | "refreshToken">;

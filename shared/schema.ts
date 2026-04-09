@@ -826,3 +826,64 @@ export const trips = pgTable("trips", {
 export const insertTripSchema = createInsertSchema(trips).omit({ id: true, createdAt: true });
 export type InsertTrip = z.infer<typeof insertTripSchema>;
 export type Trip = typeof trips.$inferSelect;
+
+// ─── Smart Places ──────────────────────────────────────────────────────────
+export const familyPlaces = pgTable("family_places", {
+  id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+  familyId: varchar("family_id", { length: 36 }).notNull(),
+  name: text("name").notNull(),                    // "Barbiere Da Franco", "Conad Via Roma"
+  category: varchar("category", { length: 30 }),    // supermarket|barber|school|work|gym|doctor|restaurant|pharmacy|home|park|other
+  lat: real("lat").notNull(),
+  lng: real("lng").notNull(),
+  radiusM: integer("radius_m").default(50),        // matching radius
+  source: varchar("source", { length: 20 }).default("auto"), // auto|manual|geocoding
+  confirmedBy: varchar("confirmed_by", { length: 36 }), // profile who confirmed
+  visitCount: integer("visit_count").default(0),
+  avgDurationMin: integer("avg_duration_min"),
+  lastVisitAt: timestamp("last_visit_at"),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const visitLog = pgTable("visit_log", {
+  id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+  familyId: varchar("family_id", { length: 36 }).notNull(),
+  profileId: varchar("profile_id", { length: 36 }).notNull(),
+  placeId: varchar("place_id", { length: 36 }),     // FK to family_places (null if unknown)
+  lat: real("lat").notNull(),
+  lng: real("lng").notNull(),
+  arrivedAt: timestamp("arrived_at").notNull(),
+  departedAt: timestamp("departed_at"),
+  durationMin: integer("duration_min"),
+  placeName: text("place_name"),                    // from geocoding or user
+  placeCategory: varchar("place_category", { length: 30 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const smartNotifications = pgTable("smart_notifications", {
+  id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+  familyId: varchar("family_id", { length: 36 }).notNull(),
+  profileId: varchar("profile_id", { length: 36 }),  // target profile (null = whole family)
+  type: varchar("type", { length: 30 }).notNull(),    // place_visit|weather_alert|proximity|routine_anomaly|recurring_reminder|coordination
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  actionType: varchar("action_type", { length: 30 }), // confirm_place|reschedule_event|show_shopping|call_contact|add_expense|dismiss
+  actionPayload: jsonb("action_payload").$type<Record<string, unknown>>().default({}),
+  priority: varchar("priority", { length: 10 }).default("normal"), // low|normal|high|urgent
+  expiresAt: timestamp("expires_at"),
+  readAt: timestamp("read_at"),
+  actedAt: timestamp("acted_at"),
+  dismissedAt: timestamp("dismissed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertFamilyPlaceSchema = createInsertSchema(familyPlaces);
+export type FamilyPlace = typeof familyPlaces.$inferSelect;
+export type InsertFamilyPlace = typeof familyPlaces.$inferInsert;
+
+export const insertVisitLogSchema = createInsertSchema(visitLog);
+export type VisitLog = typeof visitLog.$inferSelect;
+
+export const insertSmartNotificationSchema = createInsertSchema(smartNotifications);
+export type SmartNotification = typeof smartNotifications.$inferSelect;
+export type InsertSmartNotification = typeof smartNotifications.$inferInsert;

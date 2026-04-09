@@ -2,8 +2,9 @@ import type { Express, Request, Response } from "express";
 import { requireAuth } from "../lib/requireAuth";
 
 import { db } from "../db";
-import { aiInsights, profiles, aiFeedback } from "@shared/schema";
-import { eq, desc, inArray } from "drizzle-orm";
+import { aiInsights, profiles, aiFeedback, familyPlaces, smartNotifications } from "@shared/schema";
+import { eq, desc, inArray, and, isNull, gte } from "drizzle-orm";
+import { confirmPlace } from "../services/placeDetector";
 import { getCached } from "../ai/aiEngine";
 import { generateEveningSummary } from "../ai/features/eveningSummary";
 import { generateSpendingForecast } from "../ai/features/spendingForecast";
@@ -323,6 +324,71 @@ export function registerAIRoutes(app: Express): void {
         return res.status(503).json({ response: "Servizio temporaneamente non disponibile.", role: "assistant" });
       }
       res.json({ response: result.response, conversationId: result.conversationId, role: "assistant" });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  // ─── Smart Notifications ──────────────────────────────────────────────────
+  app.get("/api/ai/notifications", requireAuth, async (req, res) => {
+    try {
+      const payload = req.auth!;
+      const rows = await db.select().from(smartNotifications)
+        .where(and(
+          eq(smartNotifications.familyId, payload.familyId),
+          isNull(smartNotifications.dismissedAt),
+        ))
+        .orderBy(desc(smartNotifications.createdAt))
+        .limit(20);
+
+      // Filter out expired
+      const now = new Date();
+      const active = rows.filter(r => !r.expiresAt || new Date(r.expiresAt) > now);
+      res.json(active);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.post("/api/ai/notifications/:id/dismiss", requireAuth, async (req, res) => {
+    try {
+      await db.update(smartNotifications)
+        .set({ dismissedAt: new Date() })
+        .where(eq(smartNotifications.id, req.params.id));
+      res.json({ ok: true });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.post("/api/ai/notifications/:id/act", requireAuth, async (req, res) => {
+    try {
+      await db.update(smartNotifications)
+        .set({ actedAt: new Date() })
+        .where(eq(smartNotifications.id, req.params.id));
+      res.json({ ok: true });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  // ─── Places ──────────────────────────────────────────────────────────────
+  app.get("/api/ai/places", requireAuth, async (req, res) => {
+    try {
+      const payload = req.auth!;
+      const places = await db.select().from(familyPlaces)
+        .where(eq(familyPlaces.familyId, payload.familyId))
+        .orderBy(desc(familyPlaces.lastVisitAt));
+      res.json(places);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.post("/api/ai/places/confirm", requireAuth, async (req, res) => {
+    try {
+      const payload = req.auth!;
+      const { lat, lng, name, category } = req.body;
+      if (!lat || !lng || !name) return res.status(400).json({ message: "lat, lng, name obbligatori" });
+      const id = await confirmPlace(payload.familyId, payload.profileId, lat, lng, name, category || "other");
+      res.json({ id });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.delete("/api/ai/places/:id", requireAuth, async (req, res) => {
+    try {
+      await db.delete(familyPlaces).where(eq(familyPlaces.id, req.params.id));
+      res.json({ ok: true });
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 

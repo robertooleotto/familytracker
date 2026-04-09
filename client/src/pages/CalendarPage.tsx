@@ -22,7 +22,7 @@ import {
   addWeeks, subWeeks, addDays, subDays, getHours, getMinutes,
   isFuture, isPast, startOfDay, endOfDay, isWithinInterval,
 } from "date-fns";
-import { it } from "date-fns/locale";
+import { it } from "date-fns/locale/it";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface EventWithDetails extends Event {

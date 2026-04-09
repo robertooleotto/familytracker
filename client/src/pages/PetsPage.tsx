@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import type { Pet, PetEvent } from "@shared/schema";
 import { format } from "date-fns";
-import { it } from "date-fns/locale";
+import { it } from "date-fns/locale/it";
 
 const SPECIES_EMOJI: Record<string, string> = {
   dog: "🐕",
