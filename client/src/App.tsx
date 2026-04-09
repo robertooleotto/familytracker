@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthContext } from "@/lib/authContext";
 import { haptics } from "@/lib/haptics";
+import { initSessionFromStorage, listenForTokenRefresh } from "@/lib/auth";
 import { useLocation } from "wouter";
 import AuthPage from "@/pages/AuthPage";
 import BriefingPage from "@/pages/BriefingPage";
@@ -364,6 +365,13 @@ function MainApp() {
   // Track first visit to map so we can keep it mounted thereafter (avoids Leaflet cleanup artifacts)
   const [mapEverVisited, setMapEverVisited] = useState(activeTab === "map");
   useEffect(() => { if (activeTab === "map") setMapEverVisited(true); }, [activeTab]);
+
+  // Initialize Supabase session from stored tokens on app start (enables auto-refresh)
+  useEffect(() => {
+    initSessionFromStorage();
+    const unsub = listenForTokenRefresh();
+    return unsub;
+  }, []);
 
   // Auto-navigate to budget tab on OAuth callback (banking is inside budget)
   useEffect(() => {

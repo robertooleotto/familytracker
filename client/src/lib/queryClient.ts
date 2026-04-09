@@ -1,5 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import { getAuthHeaders } from "./auth";
+import { getAuthHeaders, getAuthHeadersAsync, refreshSessionToken } from "./auth";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -19,8 +19,9 @@ export async function apiRequest(
   url: string,
   data?: unknown,
 ): Promise<Response> {
+  // Refresh token proactively if it's about to expire
   const headers: Record<string, string> = {
-    ...getAuthHeaders(),
+    ...(await getAuthHeadersAsync()),
   };
   if (data !== undefined) {
     headers["Content-Type"] = "application/json";
@@ -30,6 +31,22 @@ export async function apiRequest(
     headers,
     body: data !== undefined ? JSON.stringify(data) : undefined,
   });
+
+  // If we still got a 401, attempt one refresh and retry
+  if (res.status === 401) {
+    const refreshed = await refreshSessionToken();
+    if (refreshed) {
+      const retryHeaders: Record<string, string> = { ...getAuthHeaders() };
+      if (data !== undefined) retryHeaders["Content-Type"] = "application/json";
+      const retryRes = await fetch(url, {
+        method,
+        headers: retryHeaders,
+        body: data !== undefined ? JSON.stringify(data) : undefined,
+      });
+      await throwIfResNotOk(retryRes);
+      return retryRes;
+    }
+  }
 
   await throwIfResNotOk(res);
   return res;
@@ -44,12 +61,23 @@ export const getQueryFn: <T>(options: {
     const url = Array.isArray(queryKey)
       ? queryKey.filter(Boolean).join("/")
       : String(queryKey);
-    const res = await fetch(url, {
-      headers: getAuthHeaders(),
-    });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+    // Refresh proactively before queries too
+    const headers = await getAuthHeadersAsync();
+    const res = await fetch(url, { headers });
+
+    // Retry on 401 with a fresh token
+    if (res.status === 401) {
+      const refreshed = await refreshSessionToken();
+      if (refreshed) {
+        const retryRes = await fetch(url, { headers: getAuthHeaders() });
+        if (unauthorizedBehavior === "returnNull" && retryRes.status === 401) {
+          return null;
+        }
+        await throwIfResNotOk(retryRes);
+        return await retryRes.json();
+      }
+      if (unauthorizedBehavior === "returnNull") return null;
     }
 
     await throwIfResNotOk(res);
