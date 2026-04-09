@@ -206,10 +206,8 @@ function MiniMap({ members, onClick }: MiniMapProps) {
         keyboard: false,
       });
       const mbToken = import.meta.env.VITE_MAPBOX_TOKEN || "";
-      L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/{z}/{x}/{y}?access_token=" + mbToken, {
+      L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/256/{z}/{x}/{y}@2x?access_token=" + mbToken, {
         maxZoom: 20,
-        tileSize: 512,
-        zoomOffset: -1,
       }).addTo(lRef.current);
     })();
     return () => {

@@ -119,13 +119,11 @@ export default function MapPage({ isActive = true }: { isActive?: boolean }) {
       L.control.zoom({ position: "topright" }).addTo(leafletMap.current);
       L.control.attribution({ position: "bottomleft", prefix: "" }).addTo(leafletMap.current);
 
-      // Mapbox Streets tile layer
+      // Mapbox Streets tile layer (256px tiles for native Leaflet compat)
       const mbToken = import.meta.env.VITE_MAPBOX_TOKEN || "";
-      L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=" + mbToken, {
+      L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=" + mbToken, {
         attribution: '© <a href="https://www.mapbox.com/">Mapbox</a> · © <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
         maxZoom: 20,
-        tileSize: 512,
-        zoomOffset: -1,
       }).addTo(leafletMap.current);
     };
     load();
@@ -317,7 +315,7 @@ export default function MapPage({ isActive = true }: { isActive?: boolean }) {
   };
 
   return (
-    <div className="flex flex-col h-full relative bg-[#f8f9fa] overflow-hidden" style={{ isolation: "isolate", contain: "layout style paint" }}>
+    <div className="flex flex-col h-full relative bg-[#f8f9fa] overflow-hidden">
       <style>{`
         @keyframes mapPulse {
           0%   { transform:scale(1); opacity:0.6 }
