@@ -2,12 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Fix Tailwind preflight breaking Leaflet tile rendering.
-   Tailwind sets img { max-width: 100% } which overrides
-   Leaflet's .leaflet-container img { max-width: none !important } */
+/* ── Leaflet critical overrides ──
+   Tailwind preflight + Vite bundling can break Leaflet's CDN CSS.
+   These rules ensure positioning, overflow, and image sizing are correct
+   regardless of load order or CORS issues with the CDN stylesheet. */
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer {
+  position: absolute !important;
+  left: 0;
+  top: 0;
+}
+.leaflet-container {
+  overflow: hidden !important;
+}
 .leaflet-container img {
   max-width: none !important;
   max-height: none !important;
+}
+.leaflet-tile {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  visibility: visible;
+}
+.leaflet-tile-container {
+  pointer-events: none;
 }
 
 /*
