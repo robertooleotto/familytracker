@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Sparkles, TrendingUp, AlertTriangle, Heart, ShoppingCart,
-  Lightbulb, RefreshCw, CheckCircle, BookOpen, Moon
+  Lightbulb, RefreshCw, CheckCircle, BookOpen, Moon, ThumbsUp, ThumbsDown
 } from "lucide-react";
 
 interface AiInsight {
@@ -55,6 +55,7 @@ export default function AiPage() {
   const { profile } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"summary" | "forecast" | "score" | "shopping" | "insights">("summary");
+  const [ratedInsights, setRatedInsights] = useState<Record<string, number>>({});
 
   const { data: status } = useQuery<{ available: boolean }>({ queryKey: ["/api/ai/status"] });
   const aiAvailable = status?.available ?? false;
@@ -86,6 +87,16 @@ export default function AiPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/shopping"] });
       toast({ title: "Aggiunto alla lista!" });
+    },
+  });
+
+  const feedbackMutation = useMutation({
+    mutationFn: async ({ targetId, rating }: { targetId: string; rating: number }) => {
+      await apiRequest("POST", "/api/ai/feedback", {
+        targetType: "insight",
+        targetId,
+        rating,
+      });
     },
   });
 
@@ -406,6 +417,22 @@ export default function AiPage() {
                           {new Date(ins.createdAt).toLocaleDateString("it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                           {!ins.readAt && <span className="ml-2 text-blue-500">• Non letto</span>}
                         </p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); feedbackMutation.mutate({ targetId: ins.id, rating: 1 }); setRatedInsights(prev => ({...prev, [ins.id]: 1})); }}
+                            disabled={!!ratedInsights[ins.id]}
+                            className={`p-0.5 rounded transition-colors ${ratedInsights[ins.id] === 1 ? 'text-green-500' : 'text-muted-foreground/30 hover:text-green-500'}`}
+                          >
+                            <ThumbsUp className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); feedbackMutation.mutate({ targetId: ins.id, rating: -1 }); setRatedInsights(prev => ({...prev, [ins.id]: -1})); }}
+                            disabled={!!ratedInsights[ins.id]}
+                            className={`p-0.5 rounded transition-colors ${ratedInsights[ins.id] === -1 ? 'text-red-500' : 'text-muted-foreground/30 hover:text-red-500'}`}
+                          >
+                            <ThumbsDown className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

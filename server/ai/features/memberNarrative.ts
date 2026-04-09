@@ -1,9 +1,13 @@
 import { db } from "../../db";
 import { profiles, locations, events, tasks, checkins } from "@shared/schema";
 import { eq, and, gte, desc } from "drizzle-orm";
-import { callClaude } from "../aiEngine";
+import { callClaude, getCached, saveCache } from "../aiEngine";
 
 export async function generateMemberNarrative(familyId: string, memberId: string): Promise<string | null> {
+  const cacheKey = `narrative_${memberId}`;
+  const cached = await getCached<string>(familyId, cacheKey, 4);
+  if (cached) return cached;
+
   const today = new Date();
   const startOfDay = new Date(today.toISOString().split("T")[0] + "T00:00:00.000Z");
   const tomorrow = new Date(today.getTime() + 86_400_000);
@@ -51,7 +55,7 @@ export async function generateMemberNarrative(familyId: string, memberId: string
   const completedTasks = tasksRes.filter(t => t.completedAt).map(t => t.title).join(", ");
 
   const prompt = `
-Sei l'assistente di una famiglia italiana. Scrivi una breve narrativa affettuosa e personale su ${member.name} 
+Sei l'assistente di una famiglia italiana. Scrivi una breve narrativa affettuosa e personale su ${member.name}
 in italiano, come se fossi un familiare che racconta la giornata con calore e affetto.
 Tono: caldo, narrativo, umano. NON usare elenchi. Massimo 3-4 frasi.
 Inizia sempre con il nome della persona. Usa un linguaggio naturale, non robotico.
@@ -66,5 +70,9 @@ Dati giornata di ${member.name} (ruolo: ${member.role}):
 
 Scrivi la narrativa:`.trim();
 
-  return await callClaude(prompt, 250);
+  const narrative = await callClaude(prompt, 250);
+  if (narrative) {
+    await saveCache(familyId, cacheKey, narrative);
+  }
+  return narrative;
 }

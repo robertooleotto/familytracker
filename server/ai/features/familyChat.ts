@@ -4,7 +4,7 @@ import {
   medications, aiConversations, aiMessages,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, isNull } from "drizzle-orm";
-import { callClaudeConversation } from "../aiEngine";
+import { callClaudeConversation, callClaudeConversationStream } from "../aiEngine";
 
 const MAX_HISTORY_MESSAGES = 20; // keep last N messages for context window
 const MAX_CONVERSATIONS_OPEN = 5; // max open conversations per user
@@ -122,12 +122,31 @@ ${pendingTasks.length > 0
 }
 
 /**
+ * Detect chat topics from user message to enrich system prompt.
+ */
+function detectChatTopic(message: string): string[] {
+  const topics: string[] = [];
+  const lower = message.toLowerCase();
+
+  if (/spes[aei]|costo|pagat|soldi|euro|€|budget|bolletta/.test(lower)) topics.push('expenses');
+  if (/dove|posizion|trova|mappa|gps|luogo/.test(lower)) topics.push('location');
+  if (/impegn|evento|agenda|calendario|appuntamento|domani|settimana/.test(lower)) topics.push('calendar');
+  if (/spesa|lista|comprare|supermercato|negozio/.test(lower)) topics.push('shopping');
+  if (/farmac|medicina|pastigli|ricetta|salute|dottore|medico/.test(lower)) topics.push('health');
+  if (/compit|task|fare|assegnat|pulizia|faccend/.test(lower)) topics.push('tasks');
+  if (/studio|scuola|voto|interroga|esame|compito/.test(lower)) topics.push('school');
+  if (/riassunto|riepilogo|report|panoramica|come (va|stiamo)/.test(lower)) topics.push('summary');
+
+  return topics.length > 0 ? topics : ['general'];
+}
+
+/**
  * Get or create an active conversation for a user.
  */
 export async function getOrCreateConversation(
   familyId: string,
   profileId: string,
-  type: "family_chat" | "tutor" = "family_chat"
+  type: "family_chat" = "family_chat"
 ): Promise<string> {
   // Find an open conversation of this type
   const [existing] = await db.select({ id: aiConversations.id })
@@ -148,7 +167,7 @@ export async function getOrCreateConversation(
     familyId,
     profileId,
     type,
-    title: type === "family_chat" ? "Chat con Assistente" : "Sessione Tutor",
+    title: "Chat con Assistente",
   }).returning({ id: aiConversations.id });
 
   return conv.id;
@@ -215,11 +234,33 @@ export async function handleFamilyChat(
   // Build system prompt with live family context
   const systemPrompt = await buildFamilySystemPrompt(familyId, profileId);
 
+  // Detect topics and enrich prompt
+  const topics = detectChatTopic(userMessage);
+  let enrichedPrompt = systemPrompt;
+  if (topics.includes('expenses')) {
+    enrichedPrompt += '\n\nL\'utente sta chiedendo di spese/finanze. Concentrati sui dati economici disponibili, dai dettagli specifici e consigli pratici sul budget.';
+  }
+  if (topics.includes('calendar')) {
+    enrichedPrompt += '\n\nL\'utente chiede di impegni/calendario. Concentrati sugli eventi imminenti, segnala sovrapposizioni o giornate intense, suggerisci come organizzarsi.';
+  }
+  if (topics.includes('health')) {
+    enrichedPrompt += '\n\nL\'utente chiede di salute/farmaci. Concentrati sui farmaci attivi e ricorda gli orari di assunzione se disponibili.';
+  }
+  if (topics.includes('location')) {
+    enrichedPrompt += '\n\nL\'utente chiede dove si trovano i familiari. Fornisci le informazioni GPS più recenti in modo chiaro e rassicurante.';
+  }
+  if (topics.includes('shopping')) {
+    enrichedPrompt += '\n\nL\'utente chiede della lista spesa. Elenca cosa manca, suggerisci aggiunte basate sulle abitudini.';
+  }
+  if (topics.includes('summary')) {
+    enrichedPrompt += '\n\nL\'utente vuole un riepilogo. Fornisci una panoramica concisa ma completa della situazione familiare attuale.';
+  }
+
   // Load conversation history
   const history = await loadConversationHistory(convId);
 
   // Call Claude
-  const response = await callClaudeConversation(systemPrompt, history, 800, false);
+  const response = await callClaudeConversation(enrichedPrompt, history, 800, false);
 
   if (!response) {
     // Remove user message if Claude failed
@@ -230,6 +271,68 @@ export async function handleFamilyChat(
   await saveMessage(convId, "assistant", response);
 
   return { response, conversationId: convId };
+}
+
+/**
+ * Stream-based family chat handler.
+ * Returns a stream of text deltas and a callback to save the complete response.
+ */
+export async function handleFamilyChatStream(
+  familyId: string,
+  profileId: string,
+  userMessage: string,
+  conversationId?: string
+): Promise<{ stream: ReadableStream<string>; conversationId: string; onComplete: (fullText: string) => Promise<void> } | null> {
+  // Get or create conversation
+  const convId = conversationId
+    ? conversationId
+    : await getOrCreateConversation(familyId, profileId, "family_chat");
+
+  // Save user message
+  await saveMessage(convId, "user", userMessage);
+
+  // Build system prompt with live family context
+  const systemPrompt = await buildFamilySystemPrompt(familyId, profileId);
+
+  // Detect topics and enrich prompt
+  const topics = detectChatTopic(userMessage);
+  let enrichedPrompt = systemPrompt;
+  if (topics.includes('expenses')) {
+    enrichedPrompt += '\n\nL\'utente sta chiedendo di spese/finanze. Concentrati sui dati economici disponibili, dai dettagli specifici e consigli pratici sul budget.';
+  }
+  if (topics.includes('calendar')) {
+    enrichedPrompt += '\n\nL\'utente chiede di impegni/calendario. Concentrati sugli eventi imminenti, segnala sovrapposizioni o giornate intense, suggerisci come organizzarsi.';
+  }
+  if (topics.includes('health')) {
+    enrichedPrompt += '\n\nL\'utente chiede di salute/farmaci. Concentrati sui farmaci attivi e ricorda gli orari di assunzione se disponibili.';
+  }
+  if (topics.includes('location')) {
+    enrichedPrompt += '\n\nL\'utente chiede dove si trovano i familiari. Fornisci le informazioni GPS più recenti in modo chiaro e rassicurante.';
+  }
+  if (topics.includes('shopping')) {
+    enrichedPrompt += '\n\nL\'utente chiede della lista spesa. Elenca cosa manca, suggerisci aggiunte basate sulle abitudini.';
+  }
+  if (topics.includes('summary')) {
+    enrichedPrompt += '\n\nL\'utente vuole un riepilogo. Fornisci una panoramica concisa ma completa della situazione familiare attuale.';
+  }
+
+  // Load conversation history
+  const history = await loadConversationHistory(convId);
+
+  // Call Claude with streaming
+  const stream = await callClaudeConversationStream(enrichedPrompt, history, 800, false);
+
+  if (!stream) {
+    return null;
+  }
+
+  return {
+    stream,
+    conversationId: convId,
+    onComplete: async (fullText: string) => {
+      await saveMessage(convId, "assistant", fullText);
+    },
+  };
 }
 
 /**
@@ -247,7 +350,7 @@ export async function closeConversation(conversationId: string): Promise<void> {
 export async function listConversations(
   familyId: string,
   profileId: string,
-  type: "family_chat" | "tutor" = "family_chat",
+  type: "family_chat" = "family_chat",
   includeArchived = false
 ): Promise<Array<{ id: string; title: string | null; updatedAt: Date; closedAt: Date | null }>> {
   const conditions = [

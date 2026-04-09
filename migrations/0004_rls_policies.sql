@@ -141,7 +141,7 @@ DECLARE
     'med_confirmations','medications','messages','pet_events','pets',
     'rewards','school_absences','school_connections','school_grades',
     'school_homework','school_notices','shopping_items','subscriptions',
-    'tasks','trips','tutor_sessions','vehicle_logs','vehicles','vital_signs'
+    'tasks','trips','vehicle_logs','vehicles','vital_signs'
   ];
 BEGIN
   FOREACH tbl IN ARRAY family_tables LOOP

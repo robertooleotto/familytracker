@@ -741,7 +741,7 @@ export const aiConversations = pgTable("ai_conversations", {
   // userId is a legacy column kept nullable to match existing DB; prefer profileId.
   userId: varchar("user_id"),
   profileId: varchar("profile_id").references(() => profiles.id, { onDelete: "cascade" }).notNull(),
-  type: varchar("type", { length: 20 }).notNull().default("family_chat"), // "family_chat" | "tutor"
+  type: varchar("type", { length: 20 }).notNull().default("family_chat"), // "family_chat"
   status: varchar("status", { length: 20 }).notNull().default("active"), // "active" | "closed" | "archived"
   title: text("title"),
   metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
@@ -760,33 +760,28 @@ export const aiMessages = pgTable("ai_messages", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// ─── AI Tutor Sessions ──────────────────────────────────────────────────────
-export const tutorSessions = pgTable("tutor_sessions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  conversationId: varchar("conversation_id").references(() => aiConversations.id, { onDelete: "cascade" }).notNull(),
-  familyId: varchar("family_id").references(() => families.id, { onDelete: "cascade" }).notNull(),
-  childId: varchar("child_id").references(() => profiles.id, { onDelete: "cascade" }).notNull(),
-  subject: text("subject").notNull(),
-  topic: text("topic"),
-  difficulty: varchar("difficulty", { length: 15 }).default("medium"), // "easy" | "medium" | "hard"
-  questionsAsked: integer("questions_asked").notNull().default(0),
-  correctAnswers: integer("correct_answers").notNull().default(0),
-  durationMinutes: integer("duration_minutes").notNull().default(0),
-  parentReportSent: boolean("parent_report_sent").notNull().default(false),
+export const aiFeedback = pgTable("ai_feedback", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  familyId: varchar("family_id", { length: 36 }).references(() => families.id, { onDelete: "cascade" }).notNull(),
+  profileId: varchar("profile_id", { length: 36 }).references(() => profiles.id, { onDelete: "set null" }),
+  targetType: varchar("target_type", { length: 20 }).notNull(), // 'insight' | 'chat_message' | 'suggestion'
+  targetId: varchar("target_id", { length: 36 }),
+  rating: integer("rating").notNull(), // 1 = thumbs up, -1 = thumbs down
+  comment: text("comment"),
+  context: jsonb("context").$type<Record<string, unknown>>().default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const insertAiConversationSchema = createInsertSchema(aiConversations).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertAiMessageSchema = createInsertSchema(aiMessages).omit({ id: true, createdAt: true });
-export const insertTutorSessionSchema = createInsertSchema(tutorSessions).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAiFeedbackSchema = createInsertSchema(aiFeedback).omit({ id: true, createdAt: true });
 
 export type AiConversation = typeof aiConversations.$inferSelect;
 export type InsertAiConversation = z.infer<typeof insertAiConversationSchema>;
 export type AiMessage = typeof aiMessages.$inferSelect;
 export type InsertAiMessage = z.infer<typeof insertAiMessageSchema>;
-export type TutorSession = typeof tutorSessions.$inferSelect;
-export type InsertTutorSession = z.infer<typeof insertTutorSessionSchema>;
+export type AiFeedback = typeof aiFeedback.$inferSelect;
+export type InsertAiFeedback = z.infer<typeof insertAiFeedbackSchema>;
 
 export type User = Profile;
 export type InsertUser = InsertProfile;

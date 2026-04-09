@@ -2,12 +2,12 @@ import { db } from "./db";
 import {
   families, profiles, locations, events, messages, shoppingItems,
   geofences, geofenceEvents, medications, homeDeadlines, tasks, rewards, checkins,
-  budgetCategories, expenses,
+  budgetCategories, expenses, aiCache,
   pets, petEvents, vehicles, vehicleLogs, subscriptions, homeContacts, anniversaries, dinnerRotation,
   bankConnections, foodPreferences, documents, locationHistory,
   vitalSigns, dailyCheckins, emergencyCards, elderlyAlerts, medConfirmations,
 } from "@shared/schema";
-import { eq, desc, and, lt, gte, lte, isNull } from "drizzle-orm";
+import { eq, desc, and, lt, gte, lte, isNull, inArray } from "drizzle-orm";
 import type {
   Family, InsertFamily,
   Profile, InsertProfile,
@@ -284,7 +284,22 @@ export class DbStorage {
   // ─── Expenses ──────────────────────────────────────────────────────────────
   async createExpense(data: InsertExpense): Promise<Expense> {
     const [e] = await db.insert(expenses).values(data).returning();
+    // Invalidate AI spending caches when new expense is added
+    if (data.familyId) {
+      this.invalidateAiSpendingCache(data.familyId).catch(err =>
+        console.warn('[AI Cache] Failed to invalidate:', err.message)
+      );
+    }
     return e;
+  }
+
+  private async invalidateAiSpendingCache(familyId: string): Promise<void> {
+    await db.delete(aiCache).where(
+      and(
+        eq(aiCache.familyId, familyId),
+        inArray(aiCache.feature, ['spending_forecast', 'health_score'])
+      )
+    );
   }
   async getExpensesByFamily(familyId: string, from?: Date, to?: Date): Promise<(Expense & { category: BudgetCategory | null; addedByProfile: Profile | null })[]> {
     const conditions = [eq(expenses.familyId, familyId)];

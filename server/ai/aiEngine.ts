@@ -208,3 +208,71 @@ export async function saveInsight(
 ): Promise<void> {
   await db.insert(aiInsights).values({ familyId, type, message, severity, metadata: metadata ?? null });
 }
+
+/**
+ * Stream-based conversation call to Claude API.
+ * Returns a ReadableStream of text deltas from the Claude API SSE response.
+ */
+export async function callClaudeConversationStream(
+  systemPrompt: string,
+  messages: Array<{ role: "user" | "assistant"; content: string }>,
+  maxTokens = 1200,
+  usePremium = false
+): Promise<ReadableStream<string> | null> {
+  const apiKey = process.env.CLAUDE_API_KEY;
+  if (!apiKey) {
+    console.warn("[AI] CLAUDE_API_KEY not set — returning null");
+    return null;
+  }
+
+  try {
+    const res = await fetch(CLAUDE_API, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: usePremium ? MODEL_PREMIUM : MODEL,
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages,
+        stream: true,
+      }),
+    });
+
+    if (!res.ok || !res.body) {
+      const err = await res.text();
+      console.error("[AI] Claude streaming API error:", res.status, err);
+      return null;
+    }
+
+    // Transform the SSE stream to extract just text deltas
+    return res.body.pipeThrough(new TextDecoderStream()).pipeThrough(
+      new TransformStream<string, string>({
+        transform(chunk, controller) {
+          // Parse SSE events from chunk
+          const lines = chunk.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') return;
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+                  controller.enqueue(parsed.delta.text);
+                }
+              } catch {
+                // Ignore parse errors for malformed JSON
+              }
+            }
+          }
+        }
+      })
+    );
+  } catch (err: any) {
+    console.error("[AI] Streaming error:", err);
+    return null;
+  }
+}

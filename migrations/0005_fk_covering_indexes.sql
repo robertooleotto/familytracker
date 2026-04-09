@@ -121,8 +121,6 @@ CREATE INDEX IF NOT EXISTS idx_tasks_verified_by ON public.tasks (verified_by);
 -- trips
 CREATE INDEX IF NOT EXISTS idx_trips_family_id ON public.trips (family_id);
 CREATE INDEX IF NOT EXISTS idx_trips_profile_id ON public.trips (profile_id);
--- tutor_sessions
-CREATE INDEX IF NOT EXISTS idx_tutor_sessions_conversation_id ON public.tutor_sessions (conversation_id);
 -- vehicle_logs
 CREATE INDEX IF NOT EXISTS idx_vehicle_logs_family_id ON public.vehicle_logs (family_id);
 CREATE INDEX IF NOT EXISTS idx_vehicle_logs_vehicle_id ON public.vehicle_logs (vehicle_id);

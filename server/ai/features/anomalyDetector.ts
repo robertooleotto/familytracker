@@ -68,22 +68,16 @@ export async function detectAnomalies(familyId: string): Promise<Anomaly[]> {
   const prompt = `
 Analizza queste anomalie di spesa familiare.
 Genera un messaggio in italiano per ciascuna, tono neutro e informativo (non allarmistico).
-Rispondi SOLO in JSON array, nessun testo aggiuntivo.
+Rispondi SOLO in JSON array valido, senza testo aggiuntivo né markdown.
 
 Medie mensili: ${JSON.stringify(avgByCategory)}
 Mese corrente: ${JSON.stringify(currByCategory)}
 Categorie anomale: ${candidates.join(", ")}
 
-JSON richiesto:
-[
-  {
-    "category": "nome categoria",
-    "average_monthly": 0,
-    "current_month": 0,
-    "percentage_increase": 0,
-    "message": "messaggio in italiano max 1 frase"
-  }
-]
+Esempio di risposta corretta:
+[{"category":"Alimentari","average_monthly":450.00,"current_month":720.00,"percentage_increase":60,"message":"La spesa alimentare di questo mese è superiore alla media, probabilmente per qualche occasione speciale."}]
+
+Rispondi con lo stesso formato JSON array:
   `.trim();
 
   const raw = await callClaude(prompt, 500);

@@ -32,22 +32,16 @@ export async function suggestShoppingItems(familyId: string): Promise<ShoppingSu
   const prompt = `
 Analizza gli acquisti passati e suggerisci al massimo 5 articoli da aggiungere alla lista della spesa.
 Suggerisci solo articoli NON già presenti nella lista. Basa i suggerimenti sulla frequenza di acquisto.
-Rispondi SOLO in JSON, nessun testo aggiuntivo.
+Rispondi SOLO in JSON valido, senza testo aggiuntivo né markdown.
 
 Storico acquisti (ultimi 60 giorni): ${JSON.stringify(recentHistory)}
 Articoli già in lista: ${JSON.stringify(currentItems)}
 Data oggi: ${new Date().toISOString().split("T")[0]}
 
-JSON richiesto:
-{
-  "suggestions": [
-    {
-      "name": "nome articolo",
-      "reason": "Di solito lo compri ogni X giorni",
-      "confidence": 0.8
-    }
-  ]
-}
+Esempio di risposta corretta:
+{"suggestions":[{"name":"Latte","reason":"Lo compri ogni 4-5 giorni, l'ultimo acquisto risale a 6 giorni fa","confidence":0.92},{"name":"Pane","reason":"Acquisto settimanale abituale","confidence":0.85}]}
+
+Rispondi con lo stesso formato JSON:
   `.trim();
 
   const raw = await callClaude(prompt, 400);

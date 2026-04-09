@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Sparkles, Send, MapPin, Wallet, Calendar, BarChart2,
-  History, X, Archive, MessageSquarePlus, Bot,
+  History, X, Archive, MessageSquarePlus, Bot, ThumbsUp, ThumbsDown,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -207,7 +207,10 @@ export default function AiFamilyChatPage() {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [ratedMessages, setRatedMessages] = useState<Record<string, number>>({});
   const bottomRef = useRef<HTMLDivElement>(null);
+  const streamingMsgIdRef = useRef<string>("");
+  const streamingTextRef = useRef<string>("");
 
   const { data: conversations, isLoading: loadingConversations } = useQuery<Conversation[]>({
     queryKey: ["/api/ai/chat/conversations"],
@@ -219,34 +222,119 @@ export default function AiFamilyChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
+  const feedbackMutation = useMutation({
+    mutationFn: async ({ targetId, rating }: { targetId: string; rating: number }) => {
+      await apiRequest("POST", "/api/ai/feedback", {
+        targetType: "chat_message",
+        targetId,
+        rating,
+      });
+    },
+  });
+
   const sendMutation = useMutation({
     mutationFn: async (message: string) => {
-      const res = await apiRequest("POST", "/api/ai/chat", {
-        message,
-        conversationId: conversationId ?? undefined,
+      const res = await fetch("/api/ai/chat/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ message, conversationId: conversationId ?? undefined }),
       });
-      return res.json() as Promise<{ response: string; conversationId: string }>;
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Errore nella risposta");
+      }
+
+      if (!res.body) throw new Error("Streaming non supportato");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let convId = conversationId;
+      let fullText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Split by double newline to separate SSE events
+        const events = buffer.split('\n\n');
+        buffer = events.pop() || '';
+
+        for (const event of events) {
+          const lines = event.split('\n');
+          let eventType = '';
+          let data = '';
+
+          for (const line of lines) {
+            if (line.startsWith('event: ')) eventType = line.slice(7);
+            if (line.startsWith('data: ')) data = line.slice(6);
+          }
+
+          if (eventType === 'meta' && data) {
+            try {
+              const meta = JSON.parse(data);
+              convId = meta.conversationId;
+            } catch {
+              // Ignore parse errors
+            }
+          } else if (eventType === 'delta' && data) {
+            try {
+              const text = JSON.parse(data);
+              fullText += text;
+              streamingTextRef.current = fullText;
+
+              // Update the assistant message in state incrementally
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === streamingMsgIdRef.current
+                    ? { ...m, content: streamingTextRef.current }
+                    : m
+                )
+              );
+            } catch {
+              // Ignore parse errors
+            }
+          } else if (eventType === 'error') {
+            throw new Error(data || "Assistente non disponibile");
+          }
+        }
+      }
+
+      return { response: fullText, conversationId: convId! };
     },
     onMutate: (message) => {
+      const userId = `u-${Date.now()}`;
+      const assistantId = `a-${Date.now()}`;
+
+      streamingMsgIdRef.current = assistantId;
+      streamingTextRef.current = '';
+
       setMessages((prev) => [
         ...prev,
-        { id: `u-${Date.now()}`, role: "user", content: message, timestamp: new Date() },
+        { id: userId, role: "user", content: message, timestamp: new Date() },
+        { id: assistantId, role: "assistant", content: '', timestamp: new Date() },
       ]);
       setIsTyping(true);
       setInput("");
     },
     onSuccess: (data) => {
       setConversationId(data.conversationId);
-      setMessages((prev) => [
-        ...prev,
-        { id: `a-${Date.now()}`, role: "assistant", content: data.response, timestamp: new Date() },
-      ]);
       setIsTyping(false);
+      streamingTextRef.current = '';
+      streamingMsgIdRef.current = '';
       queryClient.invalidateQueries({ queryKey: ["/api/ai/chat/conversations"] });
     },
     onError: (e: Error) => {
       setIsTyping(false);
+      streamingTextRef.current = '';
+      streamingMsgIdRef.current = '';
       toast({ title: "Errore", description: e.message, variant: "destructive" });
+      // Remove the incomplete assistant message
+      setMessages((prev) => prev.filter((m) => m.content !== ''));
     },
   });
 
@@ -428,6 +516,34 @@ export default function AiFamilyChatPage() {
                     <span className="text-[10px] text-muted-foreground mt-0.5 px-1">
                       {formatTime(msg.timestamp)}
                     </span>
+                    {!isUser && (
+                      <div className="flex items-center gap-1 mt-0.5 px-1">
+                        <button
+                          onClick={() => {
+                            feedbackMutation.mutate({ targetId: msg.id, rating: 1 });
+                            setRatedMessages(prev => ({...prev, [msg.id]: 1}));
+                          }}
+                          disabled={!!ratedMessages[msg.id]}
+                          className={`p-1 rounded-full transition-colors ${
+                            ratedMessages[msg.id] === 1 ? 'text-green-500' : 'text-muted-foreground/40 hover:text-green-500'
+                          }`}
+                        >
+                          <ThumbsUp className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            feedbackMutation.mutate({ targetId: msg.id, rating: -1 });
+                            setRatedMessages(prev => ({...prev, [msg.id]: -1}));
+                          }}
+                          disabled={!!ratedMessages[msg.id]}
+                          className={`p-1 rounded-full transition-colors ${
+                            ratedMessages[msg.id] === -1 ? 'text-red-500' : 'text-muted-foreground/40 hover:text-red-500'
+                          }`}
+                        >
+                          <ThumbsDown className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
