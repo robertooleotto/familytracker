@@ -11,11 +11,11 @@ export function useFamilyWebSocket(onEvent?: WsHandler) {
 
   const connect = useCallback(() => {
     const session = getSession();
-    if (!session?.token) return;
+    if (!session?.access_token) return;
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return;
 
     const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const ws = new WebSocket(`${proto}//${window.location.host}/ws?token=${session.token}`);
+    const ws = new WebSocket(`${proto}//${window.location.host}/ws?token=${session.access_token}`);
     wsRef.current = ws;
 
     ws.onmessage = (e) => {

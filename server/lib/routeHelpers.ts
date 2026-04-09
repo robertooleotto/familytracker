@@ -85,25 +85,6 @@ export async function verifyPassword(
   return { ok: false, upgradedHash: null };
 }
 
-/**
- * Generate a JWT token for a profile.
- * Token expires in 30 days.
- */
-export function generateToken(profileId: string, familyId: string): string {
-  return jwt.sign({ profileId, familyId }, JWT_SECRET_VALUE, { expiresIn: "30d" });
-}
-
-/**
- * Verify and extract payload from a JWT token.
- * Returns { profileId, familyId } or null if invalid/expired.
- */
-export function verifyToken(token: string): { profileId: string; familyId: string } | null {
-  try {
-    return jwt.verify(token, JWT_SECRET_VALUE) as { profileId: string; familyId: string };
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Sanitize a profile object by removing the passwordHash field.

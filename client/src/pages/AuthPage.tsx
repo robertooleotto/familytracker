@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { setSession } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 import type { Profile } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +14,7 @@ import { MapPin, MessageCircle, Calendar, Shield } from "lucide-react";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 interface AuthPageProps {
-  onLogin: (profile: Profile, token: string) => void;
+  onLogin: (profile: Profile, token: string, refreshToken?: string) => void;
 }
 
 const COLOR_OPTIONS = [
@@ -52,35 +54,116 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
 
   const loginMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/auth/login", loginForm);
-      return res.json();
+      // Sign in with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginForm.email,
+        password: loginForm.password,
+      });
+      if (error) throw error;
+      if (!data.session) throw new Error("No session returned");
+
+      // Fetch profile from backend
+      const res = await fetch("/api/auth/v2/me", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${data.session.access_token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to fetch profile");
+      }
+
+      const profileData = await res.json();
+
+      return {
+        profile: profileData.profile || profileData,
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      };
     },
     onSuccess: (data) => {
-      onLogin(data.profile, data.token);
+      setSession(data.profile, data.access_token, data.refresh_token);
+      onLogin(data.profile, data.access_token, data.refresh_token);
     },
     onError: (e: Error) => toast({ title: "Accesso fallito", description: e.message, variant: "destructive" }),
   });
 
   const registerMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/auth/register", registerForm);
-      return res.json();
+      const res = await fetch("/api/auth/v2/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(registerForm),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Registrazione fallita");
+      }
+
+      const data = await res.json();
+
+      // Set the Supabase session with the returned tokens
+      if (data.session?.access_token && data.session?.refresh_token) {
+        await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
+      }
+
+      return {
+        profile: data.profile,
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      };
     },
     onSuccess: (data) => {
       toast({ title: `Famiglia "${registerForm.familyName}" creata!`, description: "Benvenuto/a in FamilyTracker" });
-      onLogin(data.profile, data.token);
+      setSession(data.profile, data.access_token, data.refresh_token);
+      onLogin(data.profile, data.access_token, data.refresh_token);
     },
     onError: (e: Error) => toast({ title: "Registrazione fallita", description: e.message, variant: "destructive" }),
   });
 
   const joinMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/auth/join", joinForm);
-      return res.json();
+      const res = await fetch("/api/auth/v2/join", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(joinForm),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Errore durante l'ingresso");
+      }
+
+      const data = await res.json();
+
+      // Set the Supabase session with the returned tokens
+      if (data.session?.access_token && data.session?.refresh_token) {
+        await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
+      }
+
+      return {
+        profile: data.profile,
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      };
     },
     onSuccess: (data) => {
       toast({ title: `Benvenuto/a ${data.profile.name}!` });
-      onLogin(data.profile, data.token);
+      setSession(data.profile, data.access_token, data.refresh_token);
+      onLogin(data.profile, data.access_token, data.refresh_token);
     },
     onError: (e: Error) => toast({ title: "Errore", description: e.message, variant: "destructive" }),
   });

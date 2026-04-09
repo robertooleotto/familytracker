@@ -1,8 +1,15 @@
 import type { Profile } from "@shared/schema";
+import { supabase } from "./supabase";
 
 const SESSION_KEY = "ft_session";
 
-export function getSession(): { profile: Profile; token: string } | null {
+export interface StoredSession {
+  profile: Profile;
+  access_token: string;
+  refresh_token: string;
+}
+
+export function getSession(): StoredSession | null {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
@@ -12,16 +19,17 @@ export function getSession(): { profile: Profile; token: string } | null {
   }
 }
 
-export function setSession(profile: Profile, token: string) {
-  localStorage.setItem(SESSION_KEY, JSON.stringify({ profile, token }));
+export function setSession(profile: Profile, access_token: string, refresh_token: string) {
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ profile, access_token, refresh_token }));
 }
 
-export function clearSession() {
+export async function clearSession() {
+  await supabase.auth.signOut();
   localStorage.removeItem(SESSION_KEY);
 }
 
 export function getAuthHeaders(): Record<string, string> {
   const session = getSession();
   if (!session) return {};
-  return { Authorization: `Bearer ${session.token}` };
+  return { Authorization: `Bearer ${session.access_token}` };
 }
