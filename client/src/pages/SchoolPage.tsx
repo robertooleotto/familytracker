@@ -207,10 +207,10 @@ function ConnectionDetail({ conn }: { conn: SchoolConnection }) {
   });
 
   const tabs = [
-    { id: "grades", label: "Voti", count: gradesQ.data?.length },
-    { id: "absences", label: "Assenze", count: absencesQ.data?.length },
-    { id: "homework", label: "Compiti", count: homeworkQ.data?.filter(h => !h.done).length },
-    { id: "notices", label: "Avvisi", count: noticesQ.data?.length },
+    { id: "grades", label: "Voti", count: (gradesQ.data ?? [])?.length },
+    { id: "absences", label: "Assenze", count: (absencesQ.data ?? [])?.length },
+    { id: "homework", label: "Compiti", count: (homeworkQ.data ?? [])?.filter(h => !h.done).length },
+    { id: "notices", label: "Avvisi", count: (noticesQ.data ?? [])?.length },
   ] as const;
 
   const grades = gradesQ.data || [];

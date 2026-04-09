@@ -487,7 +487,7 @@ export default function DocumentiPage() {
   }, [members]);
 
   // Filter docs
-  const filteredDocs = docs.filter(d => {
+  const filteredDocs = (docs ?? []).filter(d => {
     if (activeTab === "personal" && selectedPerson !== "all") {
       return d.profileId === selectedPerson;
     }
@@ -495,8 +495,8 @@ export default function DocumentiPage() {
   });
 
   // Expired / expiring docs for badge
-  const expiringCount = docs.filter(d => !isExpired(d.expiresAt) && isExpiringSoon(d.expiresAt)).length;
-  const expiredCount = docs.filter(d => isExpired(d.expiresAt)).length;
+  const expiringCount = (docs ?? []).filter(d => !isExpired(d.expiresAt) && isExpiringSoon(d.expiresAt)).length;
+  const expiredCount = (docs ?? []).filter(d => isExpired(d.expiresAt)).length;
 
   return (
     <div className="flex flex-col h-full bg-[#f5f5f0] dark:bg-background">
@@ -531,7 +531,7 @@ export default function DocumentiPage() {
         )}
 
         {/* Person filter (personal section only) */}
-        {activeTab === "personal" && members.length > 0 && (
+        {activeTab === "personal" && (members ?? []).length > 0 && (
           <div className="px-4 mt-3 flex gap-2 overflow-x-auto pb-1 flex-shrink-0" style={{ scrollbarWidth: "none" }}>
             <button
               onClick={() => setSelectedPerson("all")}
@@ -540,7 +540,7 @@ export default function DocumentiPage() {
             >
               Tutti
             </button>
-            {members.map(m => (
+            {(members ?? []).map(m => (
               <button
                 key={m.id}
                 onClick={() => setSelectedPerson(m.id)}

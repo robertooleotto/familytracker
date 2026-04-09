@@ -204,7 +204,7 @@ export default function GiornalePage() {
 
   const profileMap = useMemo(() => {
     const map: Record<string, Profile> = {};
-    membersCtx.forEach((m) => { map[m.profile.id] = m.profile; });
+    (membersCtx ?? []).forEach((m) => { map[m.profile.id] = m.profile; });
     return map;
   }, [membersCtx]);
 

@@ -487,11 +487,11 @@ function CheckinTab() {
         </div>
       )}
 
-      {familyCheckins.length > 0 && (
+      {(familyCheckins ?? []).length > 0 && (
         <div>
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Ultimi check-in famiglia</p>
           <div className="space-y-1.5">
-            {familyCheckins.slice(0, 8).map((c: any) => (
+            {(familyCheckins ?? []).slice(0, 8).map((c: any) => (
               <div key={c.id} data-testid={`checkin-item-${c.id}`} className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ backgroundColor: c.memberColor || "#3B82F6" }}>
                   {c.memberName?.charAt(0)}
@@ -549,7 +549,7 @@ function NarrativeTab() {
       <div>
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Scegli un membro</p>
         <div className="space-y-1.5">
-          {familySettings.map(({ profile }) => (
+          {(familySettings ?? []).map(({ profile }) => (
             <button
               key={profile.id}
               data-testid={`narrative-member-${profile.id}`}
@@ -673,7 +673,7 @@ function ElderlyTab() {
     onError: (e: any) => toast({ title: "Errore", description: e.message, variant: "destructive" }),
   });
 
-  const elderlyMembers = familySettings.filter(m => m.profile.role === "elderly" || m.settings?.elderlyTrackingEnabled);
+  const elderlyMembers = (familySettings ?? []).filter(m => m.profile.role === "elderly" || m.settings?.elderlyTrackingEnabled);
 
   return (
     <div className="space-y-4">
@@ -682,7 +682,7 @@ function ElderlyTab() {
         <p className="text-[11px] text-red-600 dark:text-red-400">Monitoraggio delicato per genitori anziani o con demenza. Alert notturni, zone sicure, avvisi uscite insolite.</p>
       </div>
 
-      {familySettings.map(({ profile, settings }) => (
+      {(familySettings ?? []).map(({ profile, settings }) => (
         <div key={profile.id} className="border border-border rounded-xl overflow-hidden">
           <div className="flex items-center gap-3 px-3 py-2.5 bg-muted/20">
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold" style={{ backgroundColor: profile.colorHex }}>

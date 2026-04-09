@@ -98,9 +98,9 @@ export default function DiarioPage() {
   const topPlaces = memory?.topPlaces ?? [];
   const aiMemoryLines = useMemo(() => {
     const lines = [];
-    if (topPlaces.length > 0) lines.push(`📍 Luoghi frequenti: ${topPlaces.slice(0, 3).map(p => p.name).join(", ")}`);
-    if ((memory?.trips?.length ?? 0) > 0) {
-      const routes = new Set(memory!.trips.map(r => `${r.trip.fromName} → ${r.trip.toName}`));
+    if ((topPlaces ?? []).length > 0) lines.push(`📍 Luoghi frequenti: ${(topPlaces ?? []).slice(0, 3).map(p => p.name).join(", ")}`);
+    if (((memory?.trips ?? [])?.length ?? 0) > 0) {
+      const routes = new Set((memory?.trips ?? []).map(r => `${r.trip.fromName} → ${r.trip.toName}`));
       lines.push(`🚗 Percorsi ricorrenti: ${[...routes].slice(0, 2).join(", ")}`);
     }
     if (lines.length === 0) lines.push("Nessun dato ancora — aggiungi i tuoi primi percorsi!");
@@ -196,11 +196,11 @@ export default function DiarioPage() {
       )}
 
       {/* Top places */}
-      {topPlaces.length > 0 && (
+      {(topPlaces ?? []).length > 0 && (
         <div className="px-5 mb-4">
           <p className="text-[12px] font-semibold text-stone-400 uppercase tracking-widest mb-2">Luoghi frequenti</p>
           <div className="flex gap-2 overflow-x-auto pb-1">
-            {topPlaces.slice(0, 8).map((place, i) => (
+            {(topPlaces ?? []).slice(0, 8).map((place, i) => (
               <div key={i} className="flex items-center gap-1.5 bg-white border border-stone-200 rounded-full px-3 py-1.5 flex-shrink-0">
                 <MapPin size={11} className="text-red-400" />
                 <span className="text-xs font-medium text-stone-700">{place.name}</span>
