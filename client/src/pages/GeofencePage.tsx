@@ -52,7 +52,8 @@ export default function GeofencePage() {
       const L = (await import("leaflet")).default;
       leafletMap.current = L.map(mapRef.current!, { center: [41.9028, 12.4964], zoom: 13, zoomControl: false });
       L.control.zoom({ position: "bottomright" }).addTo(leafletMap.current);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(leafletMap.current);
+      const mbToken = import.meta.env.VITE_MAPBOX_TOKEN || "";
+      L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=" + mbToken, { maxZoom: 20, tileSize: 512, zoomOffset: -1 }).addTo(leafletMap.current);
 
       leafletMap.current.on("click", (e: any) => {
         setForm(f => ({ ...f, centerLat: e.latlng.lat.toFixed(6), centerLng: e.latlng.lng.toFixed(6) }));

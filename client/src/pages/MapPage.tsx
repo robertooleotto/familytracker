@@ -119,11 +119,13 @@ export default function MapPage({ isActive = true }: { isActive?: boolean }) {
       L.control.zoom({ position: "topright" }).addTo(leafletMap.current);
       L.control.attribution({ position: "bottomleft", prefix: "" }).addTo(leafletMap.current);
 
-      // Voyager CartoDB tile layer (Google Maps-like: colored roads, green parks, blue water)
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-        attribution: "© OpenStreetMap · © CartoDB",
+      // Mapbox Streets tile layer
+      const mbToken = import.meta.env.VITE_MAPBOX_TOKEN || "";
+      L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=" + mbToken, {
+        attribution: '© <a href="https://www.mapbox.com/">Mapbox</a> · © <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
         maxZoom: 20,
-        subdomains: "abcd",
+        tileSize: 512,
+        zoomOffset: -1,
       }).addTo(leafletMap.current);
     };
     load();

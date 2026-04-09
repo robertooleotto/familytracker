@@ -205,9 +205,11 @@ function MiniMap({ members, onClick }: MiniMapProps) {
         boxZoom: false,
         keyboard: false,
       });
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+      const mbToken = import.meta.env.VITE_MAPBOX_TOKEN || "";
+      L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/{z}/{x}/{y}?access_token=" + mbToken, {
         maxZoom: 20,
-        subdomains: "abcd",
+        tileSize: 512,
+        zoomOffset: -1,
       }).addTo(lRef.current);
     })();
     return () => {
