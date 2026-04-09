@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { getAuthHeaders } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -236,8 +237,7 @@ export default function AiFamilyChatPage() {
     mutationFn: async (message: string) => {
       const res = await fetch("/api/ai/chat/stream", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({ message, conversationId: conversationId ?? undefined }),
       });
 

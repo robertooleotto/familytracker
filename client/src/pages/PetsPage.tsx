@@ -96,6 +96,7 @@ export default function PetsPage() {
       });
       toast({ title: "Animale aggiunto con successo" });
     },
+    onError: (e: any) => toast({ title: "Errore", description: e.message, variant: "destructive" }),
   });
 
   const deletePetMutation = useMutation({
@@ -262,7 +263,7 @@ export default function PetsPage() {
 
       <button
         onClick={() => setShowAddPet(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-30"
+        className="fixed bottom-24 right-4 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-20"
         data-testid="button-fab-add-pet"
       >
         <Plus className="w-7 h-7" />
