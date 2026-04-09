@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fix Tailwind preflight breaking Leaflet tile rendering.
+   Tailwind sets img { max-width: 100% } which overrides
+   Leaflet's .leaflet-container img { max-width: none !important } */
+.leaflet-container img {
+  max-width: none !important;
+  max-height: none !important;
+}
+
 /*
   KINLY — Design Tokens · Palette A Coral/Navy
   Primario: Coral #E8533A  |  Surface: Navy #1A2535

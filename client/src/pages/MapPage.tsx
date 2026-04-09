@@ -126,13 +126,6 @@ export default function MapPage({ isActive = true }: { isActive?: boolean }) {
         maxZoom: 20,
       }).addTo(leafletMap.current);
 
-      // Force recalculation after layout settles (lazy-loaded component
-      // may not have final dimensions when Leaflet first measures)
-      requestAnimationFrame(() => {
-        setTimeout(() => leafletMap.current?.invalidateSize(), 0);
-        setTimeout(() => leafletMap.current?.invalidateSize(), 200);
-        setTimeout(() => leafletMap.current?.invalidateSize(), 600);
-      });
     };
     load();
     return () => {
