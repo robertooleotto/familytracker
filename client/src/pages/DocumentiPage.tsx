@@ -272,7 +272,7 @@ function AddDocDialog({
               <Select value={profileId} onValueChange={setProfileId}>
                 <SelectTrigger data-testid="select-doc-profile"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {members.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                  {(members ?? []).map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -483,7 +483,7 @@ export default function DocumentiPage() {
 
   const ownerMap = useCallback((id: string | null) => {
     if (!id) return undefined;
-    return members.find(m => m.id === id)?.name;
+    return (members ?? []).find(m => m.id === id)?.name;
   }, [members]);
 
   // Filter docs

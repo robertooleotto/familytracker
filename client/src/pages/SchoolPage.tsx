@@ -207,16 +207,16 @@ function ConnectionDetail({ conn }: { conn: SchoolConnection }) {
   });
 
   const tabs = [
-    { id: "grades", label: "Voti", count: (gradesQ.data ?? [])?.length },
-    { id: "absences", label: "Assenze", count: (absencesQ.data ?? [])?.length },
-    { id: "homework", label: "Compiti", count: (homeworkQ.data ?? [])?.filter(h => !h.done).length },
-    { id: "notices", label: "Avvisi", count: (noticesQ.data ?? [])?.length },
+    { id: "grades", label: "Voti", count: (gradesQ.data ?? []).length },
+    { id: "absences", label: "Assenze", count: (absencesQ.data ?? []).length },
+    { id: "homework", label: "Compiti", count: (homeworkQ.data ?? []).filter(h => !h.done).length },
+    { id: "notices", label: "Avvisi", count: (noticesQ.data ?? []).length },
   ] as const;
 
-  const grades = gradesQ.data || [];
-  const absences = absencesQ.data || [];
-  const homework = homeworkQ.data || [];
-  const notices = noticesQ.data || [];
+  const grades = gradesQ.data ?? [];
+  const absences = absencesQ.data ?? [];
+  const homework = homeworkQ.data ?? [];
+  const notices = noticesQ.data ?? [];
 
   const gradesBySubject = grades.reduce((acc: Record<string, SchoolGrade[]>, g) => {
     if (!acc[g.subjectName]) acc[g.subjectName] = [];

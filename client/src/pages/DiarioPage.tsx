@@ -95,7 +95,7 @@ export default function DiarioPage() {
     });
   };
 
-  const topPlaces = memory?.topPlaces ?? [];
+  const topPlaces = (memory?.topPlaces ?? []);
   const aiMemoryLines = useMemo(() => {
     const lines = [];
     if ((topPlaces ?? []).length > 0) lines.push(`📍 Luoghi frequenti: ${(topPlaces ?? []).slice(0, 3).map(p => p.name).join(", ")}`);

@@ -211,7 +211,7 @@ export default function GiornalePage() {
   const feed = useMemo<FeedItem[]>(() => {
     const items: FeedItem[] = [];
 
-    events.forEach((ev) => {
+    (events ?? []).forEach((ev) => {
       items.push({
         id: `event-${ev.id}`,
         type: "event",
@@ -220,7 +220,7 @@ export default function GiornalePage() {
       });
     });
 
-    tasks.forEach((t) => {
+    (tasks ?? []).forEach((t) => {
       const p = t.assignedTo ? profileMap[t.assignedTo] : undefined;
       items.push({
         id: `task-${t.id}`,
@@ -236,7 +236,7 @@ export default function GiornalePage() {
     });
 
     const shoppingByProfile: Record<string, string[]> = {};
-    shopping.forEach((s) => {
+    (shopping ?? []).forEach((s) => {
       const key = s.addedBy ?? "unknown";
       if (!shoppingByProfile[key]) shoppingByProfile[key] = [];
       shoppingByProfile[key].push(s.name);
@@ -251,7 +251,7 @@ export default function GiornalePage() {
       });
     });
 
-    locations.forEach(({ profile: p, location }) => {
+    (locations ?? []).forEach(({ profile: p, location }) => {
       if (!location) return;
       items.push({
         id: `loc-${p.id}`,
