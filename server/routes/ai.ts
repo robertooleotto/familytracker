@@ -16,6 +16,7 @@ import { generateMemberNarrative } from "../ai/features/memberNarrative";
 import {
   handleFamilyChat,
   handleFamilyChatStream,
+  handleFamilyChatWithTools,
   closeConversation,
   listConversations,
   loadConversationHistory,
@@ -197,9 +198,10 @@ export function registerAIRoutes(app: Express): void {
 
   /**
    * POST /api/ai/chat/stream
-   * Stream-based family chat endpoint using Server-Sent Events.
+   * Tool-use family chat endpoint using Server-Sent Events.
+   * The AI can execute actions (add events, expenses, etc.) via tools.
    * Body: { message: string, conversationId?: string }
-   * Streams events: meta, delta, done, error
+   * Streams events: meta, delta, tool, done, error
    */
   app.post("/api/ai/chat/stream", requireAuth, async (req, res) => {
     try {
@@ -225,46 +227,23 @@ export function registerAIRoutes(app: Express): void {
         "Access-Control-Allow-Origin": "*",
       });
 
-      const result = await handleFamilyChatStream(
+      const sendEvent = (event: string, data: string) => {
+        res.write(`event: ${event}\ndata: ${data}\n\n`);
+      };
+
+      await handleFamilyChatWithTools(
         payload.familyId,
         payload.profileId,
         message.trim(),
-        conversationId
+        conversationId,
+        sendEvent,
       );
 
-      if (!result) {
-        res.write('event: error\ndata: unavailable\n\n');
-        return res.end();
-      }
-
-      // Send conversation metadata
-      res.write(`event: meta\ndata: ${JSON.stringify({ conversationId: result.conversationId })}\n\n`);
-
-      let fullText = '';
-      const reader = result.stream.getReader();
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          fullText += value;
-          res.write(`event: delta\ndata: ${JSON.stringify(value)}\n\n`);
-        }
-      } catch (err) {
-        console.error('[AI] Stream read error:', err);
-        res.write('event: error\ndata: stream_error\n\n');
-      }
-
-      res.write('event: done\ndata: ok\n\n');
       res.end();
-
-      // Save complete response asynchronously after streaming completes
-      result.onComplete(fullText).catch(err => {
-        console.error('[AI] Error saving streamed message:', err);
-      });
     } catch (e: any) {
-      res.writeHead(500, { "Content-Type": "text/event-stream" });
+      if (!res.headersSent) {
+        res.writeHead(500, { "Content-Type": "text/event-stream" });
+      }
       res.write(`event: error\ndata: ${JSON.stringify(e.message)}\n\n`);
       res.end();
     }

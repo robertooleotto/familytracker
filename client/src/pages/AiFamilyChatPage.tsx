@@ -35,13 +35,25 @@ interface ConversationMessage {
   createdAt: string;
 }
 
+// ─── Simple markdown renderer for tool results ──────────────────────────────
+
+function renderMessageHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/^---$/gm, '<hr class="my-2 border-border/50" />')
+    .replace(/\n/g, "<br />");
+}
+
 // ─── Quick actions ────────────────────────────────────────────────────────────
 
 const QUICK_ACTIONS = [
-  { label: "Posizioni", icon: MapPin,    message: "Dove si trovano i membri della famiglia adesso?" },
-  { label: "Spese",     icon: Wallet,    message: "Come stiamo andando con le spese questo mese?" },
-  { label: "Impegni",   icon: Calendar,  message: "Quali sono gli impegni più urgenti di oggi?" },
-  { label: "Report",    icon: BarChart2, message: "Dammi un riepilogo generale della famiglia" },
+  { label: "Posizioni",    icon: MapPin,    message: "Dove si trovano tutti adesso?" },
+  { label: "Spese oggi",   icon: Wallet,    message: "Quanto abbiamo speso oggi?" },
+  { label: "Agenda",       icon: Calendar,  message: "Cosa c'è in programma questa settimana?" },
+  { label: "Lista spesa",  icon: BarChart2, message: "Cosa manca nella lista della spesa?" },
 ];
 
 // ─── Typing indicator ─────────────────────────────────────────────────────────
@@ -298,6 +310,23 @@ export default function AiFamilyChatPage() {
             } catch {
               // Ignore parse errors
             }
+          } else if (eventType === 'tool' && data) {
+            try {
+              const tool = JSON.parse(data) as { name: string; result: string };
+              // Append tool result as a visual block in the message
+              const toolBlock = `\n\n---\n🔧 **${tool.name.replace(/_/g, ' ')}**\n${tool.result}\n---\n\n`;
+              fullText += toolBlock;
+              streamingTextRef.current = fullText;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === streamingMsgIdRef.current
+                    ? { ...m, content: streamingTextRef.current }
+                    : m
+                )
+              );
+            } catch {
+              // Ignore parse errors
+            }
           } else if (eventType === 'error') {
             throw new Error(data || "Assistente non disponibile");
           }
@@ -511,7 +540,11 @@ export default function AiFamilyChatPage() {
                           : "bg-muted text-foreground rounded-bl-sm"
                       }`}
                     >
-                      {msg.content}
+                      {msg.content.includes('🔧') ? (
+                        <div dangerouslySetInnerHTML={{ __html: renderMessageHtml(msg.content) }} />
+                      ) : (
+                        msg.content
+                      )}
                     </div>
                     <span className="text-[10px] text-muted-foreground mt-0.5 px-1">
                       {formatTime(msg.timestamp)}

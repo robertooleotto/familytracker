@@ -4,7 +4,8 @@ import {
   medications, aiConversations, aiMessages,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, isNull } from "drizzle-orm";
-import { callClaudeConversation, callClaudeConversationStream } from "../aiEngine";
+import { callClaudeConversation, callClaudeConversationStream, callClaudeWithTools } from "../aiEngine";
+import type { ToolContext } from "../tools";
 
 const MAX_HISTORY_MESSAGES = 20; // keep last N messages for context window
 const MAX_CONVERSATIONS_OPEN = 5; // max open conversations per user
@@ -92,6 +93,17 @@ REGOLE:
 - NON inventare dati che non hai. Se non sai qualcosa, dillo con gentilezza.
 - Se ti chiedono cose fuori contesto famiglia (politica, gossip, ecc.), riporta gentilmente la conversazione sulla famiglia.
 - Puoi usare emoji con moderazione 😊
+
+AZIONI — HAI DEGLI STRUMENTI A DISPOSIZIONE:
+- Puoi AGIRE: creare eventi, spese, task, aggiungere alla lista spesa, segnare farmaci, mandare messaggi.
+- Quando l'utente ti chiede di fare qualcosa (aggiungere, creare, segnare, comprare, mandare), USA LO STRUMENTO appropriato.
+- Dopo aver usato uno strumento, conferma brevemente l'azione fatta.
+- Se l'utente chiede informazioni (eventi, posizioni, spese, task, lista spesa), usa gli strumenti get_* per ottenere dati aggiornati.
+- Per assegnare task o eventi a membri specifici, usa prima get_family_members per ottenere gli ID.
+- Se non sei sicuro di un dettaglio (data, ora, persona), chiedi conferma PRIMA di agire.
+
+MAPPA ID MEMBRI:
+${membersRes.map(m => `${m.name} → ${m.id}`).join("\n")}
 
 CONTESTO FAMIGLIA (aggiornato ad adesso, ${now.toLocaleString("it-IT")}):
 
@@ -333,6 +345,73 @@ export async function handleFamilyChatStream(
       await saveMessage(convId, "assistant", fullText);
     },
   };
+}
+
+/**
+ * Tool-based family chat handler.
+ * Uses callClaudeWithTools to let the AI execute actions.
+ * Sends SSE events for text deltas and tool actions.
+ */
+export async function handleFamilyChatWithTools(
+  familyId: string,
+  profileId: string,
+  userMessage: string,
+  conversationId: string | undefined,
+  sendEvent: (event: string, data: string) => void,
+): Promise<{ response: string; conversationId: string } | null> {
+  // Get or create conversation
+  const convId = conversationId
+    ? conversationId
+    : await getOrCreateConversation(familyId, profileId, "family_chat");
+
+  // Save user message
+  await saveMessage(convId, "user", userMessage);
+
+  // Build system prompt with live family context
+  const systemPrompt = await buildFamilySystemPrompt(familyId, profileId);
+
+  // Load conversation history
+  const history = await loadConversationHistory(convId);
+
+  // Get profile name for tool context
+  const [currentUser] = await db.select({ name: profiles.name })
+    .from(profiles).where(eq(profiles.id, profileId)).limit(1);
+
+  const toolCtx: ToolContext = {
+    familyId,
+    profileId,
+    profileName: currentUser?.name ?? "utente",
+  };
+
+  // Send conversation metadata
+  sendEvent("meta", JSON.stringify({ conversationId: convId }));
+
+  // Call Claude with tools
+  const response = await callClaudeWithTools(
+    systemPrompt,
+    history,
+    toolCtx,
+    {
+      onDelta: (text) => {
+        sendEvent("delta", JSON.stringify(text));
+      },
+      onToolUse: (name, result) => {
+        sendEvent("tool", JSON.stringify({ name, result }));
+      },
+    },
+    1200,
+  );
+
+  if (!response) {
+    sendEvent("error", "unavailable");
+    return null;
+  }
+
+  // Save assistant response
+  await saveMessage(convId, "assistant", response);
+
+  sendEvent("done", "ok");
+  return { response, conversationId: convId };
 }
 
 /**
