@@ -115,6 +115,10 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
         });
       }
 
+      if (!data.session?.access_token || !data.session?.refresh_token) {
+        throw new Error(data.warning || "Sessione non avviata. Riprova il login.");
+      }
+
       return {
         profile: data.profile,
         access_token: data.session.access_token,
@@ -152,6 +156,10 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token,
         });
+      }
+
+      if (!data.session?.access_token || !data.session?.refresh_token) {
+        throw new Error(data.warning || "Sessione non avviata. Riprova il login.");
       }
 
       return {
