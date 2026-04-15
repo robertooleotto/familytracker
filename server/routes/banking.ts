@@ -151,7 +151,10 @@ export function registerBankingRoutes(app: Express): void {
     async (req, res) => {
       const a = req.auth!;
       try {
-        const id = String(req.params.id);
+        const id = String(req.params.id).trim();
+        if (!id || id.length === 0) {
+          return res.status(400).json({ message: "Invalid connection ID" });
+        }
         const row = await getConnection(id, a.familyId);
         if (!row) return res.status(404).json({ message: "Connessione non trovata" });
 
@@ -181,7 +184,10 @@ export function registerBankingRoutes(app: Express): void {
   app.post("/api/banking/connections/:id/sync", requireAuth, async (req, res) => {
     const a = req.auth!;
     try {
-      const id = String(req.params.id);
+      const id = String(req.params.id).trim();
+      if (!id || id.length === 0) {
+        return res.status(400).json({ message: "Invalid connection ID" });
+      }
       const row = await getConnection(id, a.familyId);
       if (!row) return res.status(404).json({ message: "Connessione non trovata" });
       const result = await syncOne(row);
@@ -194,7 +200,10 @@ export function registerBankingRoutes(app: Express): void {
   app.delete("/api/banking/connections/:id", requireAuth, async (req, res) => {
     const a = req.auth!;
     try {
-      const id = String(req.params.id);
+      const id = String(req.params.id).trim();
+      if (!id || id.length === 0) {
+        return res.status(400).json({ message: "Invalid connection ID" });
+      }
       const row = await getConnection(id, a.familyId);
       if (!row) return res.status(404).json({ message: "Connessione non trovata" });
       try {
@@ -229,7 +238,10 @@ export function registerBankingRoutes(app: Express): void {
   app.get("/api/banking/accounts/:id/transactions", requireAuth, async (req, res) => {
     const a = req.auth!;
     try {
-      const id = String(req.params.id);
+      const id = String(req.params.id).trim();
+      if (!id || id.length === 0) {
+        return res.status(400).json({ message: "Invalid account ID" });
+      }
       const limit = Math.min(Number(req.query.limit) || 100, 500);
       const rows = await listTransactionsByAccount(id, a.familyId, limit);
       res.json(rows);

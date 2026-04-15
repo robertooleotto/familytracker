@@ -98,6 +98,7 @@ export function log(message: string, source = "express") {
 const SENSITIVE_KEYS = new Set([
   "token", "password", "passwordHash", "accessToken", "refreshToken",
   "inviteCode", "fcmToken", "credential", "secret", "apiKey",
+  "email", "phone", "locationLatitude", "locationLongitude", "address",
 ]);
 
 /**
