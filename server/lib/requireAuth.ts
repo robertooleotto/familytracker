@@ -1,9 +1,8 @@
 /**
- * requireAuth — single Express middleware that verifies the Supabase JWT
- * bearer token and attaches `{ profileId, familyId, authUserId, profile }`
- * to `req.auth`. Routes that need the caller's identity destructure
- * `req.auth!` instead of the old pattern of calling `auth(req, res)`
- * manually and short-circuiting on null.
+ * requireAuth — single Express middleware that verifies the JWT bearer token
+ * and attaches `{ profileId, familyId }` to `req.auth`. Routes that need the
+ * caller's identity destructure `req.auth!` instead of the old pattern of
+ * calling `auth(req, res)` manually and short-circuiting on null.
  *
  * The middleware is intentionally narrow: it ONLY handles "is the request
  * authenticated?". Authorisation (is this user a parent? do they own this
@@ -11,8 +10,12 @@
  */
 
 import type { NextFunction, Request, Response } from "express";
-import { verifySupabaseAccessToken } from "../auth/supabase";
-import { storage } from "../storage";
+import { verifyToken } from "./routeHelpers";
+
+// req.auth's shape is declared in `server/auth/middleware.ts` as
+// `SupabaseAuthContext` (with profileId, familyId, authUserId, profile). v1
+// routes only need profileId/familyId, so we cast to that shape on populate
+// and leave authUserId/profile undefined for the v1 path.
 
 function readBearer(req: { headers: { authorization?: string } }): string | null {
   const h = req.headers.authorization;
@@ -22,8 +25,9 @@ function readBearer(req: { headers: { authorization?: string } }): string | null
 
 /**
  * Hard auth: rejects with 401 if there is no valid bearer token. Use this on
- * every route that needs an authenticated caller. Populates the full
- * SupabaseAuthContext (profileId, familyId, authUserId, profile).
+ * every route that needs an authenticated caller. Only populates
+ * `profileId` / `familyId` on `req.auth` — the Supabase-specific fields stay
+ * undefined for v1 routes.
  */
 // Typed as a generic function so that Express's `app.get<Route>(path, ...handlers)`
 // overload (which sets P = RouteParameters<Route>) is still selected even when
@@ -31,35 +35,22 @@ function readBearer(req: { headers: { authorization?: string } }): string | null
 // defaults P to `ParamsDictionary`), Express would fall back to the looser
 // overload and `req.params.id` would widen to `string | string[]` in every
 // downstream handler.
-export async function requireAuth<P>(
-  req: Request<P>,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
+export function requireAuth<P>(req: Request<P>, res: Response, next: NextFunction): void {
   const token = readBearer(req);
   if (!token) {
     res.status(401).json({ message: "Unauthorized" });
     return;
   }
-
-  const result = await verifySupabaseAccessToken(token);
-  if (!result.ok) {
+  const payload = verifyToken(token);
+  if (!payload) {
     res.status(401).json({ message: "Invalid token" });
     return;
   }
-
-  const profile = await storage.getProfileByAuthUserId(result.user.id);
-  if (!profile) {
-    res.status(401).json({ message: "No profile linked to this account" });
-    return;
-  }
-
-  req.auth = {
-    profileId: profile.id,
-    familyId: profile.familyId,
-    authUserId: result.user.id,
-    profile,
-  };
+  // The Request.auth type is SupabaseAuthContext with required authUserId
+  // and profile fields. v1 tokens don't carry those, so we cast through
+  // unknown — every v1 route only reads profileId/familyId, never the
+  // Supabase-only fields.
+  req.auth = { profileId: payload.profileId, familyId: payload.familyId } as unknown as Request["auth"];
   next();
 }
 
@@ -68,24 +59,12 @@ export async function requireAuth<P>(
  * rejects. Use on endpoints that have both an authenticated and an anonymous
  * code path (rare — most routes should use `requireAuth`).
  */
-export async function tryAuth<P>(
-  req: Request<P>,
-  _res: Response,
-  next: NextFunction,
-): Promise<void> {
+export function tryAuth<P>(req: Request<P>, _res: Response, next: NextFunction): void {
   const token = readBearer(req);
   if (token) {
-    const result = await verifySupabaseAccessToken(token);
-    if (result.ok) {
-      const profile = await storage.getProfileByAuthUserId(result.user.id);
-      if (profile) {
-        req.auth = {
-          profileId: profile.id,
-          familyId: profile.familyId,
-          authUserId: result.user.id,
-          profile,
-        };
-      }
+    const payload = verifyToken(token);
+    if (payload) {
+      req.auth = { profileId: payload.profileId, familyId: payload.familyId } as unknown as Request["auth"];
     }
   }
   next();

@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import type { BudgetCategory, Expense, Profile } from "@shared/schema";
 import { format, startOfMonth, endOfMonth, subMonths, addMonths } from "date-fns";
-import { it } from "date-fns/locale/it";
+import { it } from "date-fns/locale";
 
 const BankingPage = lazy(() => import("./BankingPage"));
 

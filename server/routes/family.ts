@@ -7,7 +7,6 @@ import { safe } from "../lib/routeHelpers";
 import { broadcastToFamily } from "../wsServer";
 import { ObjectStorageService, ObjectNotFoundError } from "../replit_integrations/object_storage/objectStorage";
 import { requireAuth } from "../lib/requireAuth";
-import { processLocationUpdate } from "../services/placeDetector";
 
 // Object storage service for profile avatars and mood photos
 const objStore = new ObjectStorageService();
@@ -88,9 +87,6 @@ export function registerFamilyRoutes(app: Express): void {
         wifiSsid: wifiSsid ?? null,
         timestamp: new Date(),
       });
-      // Fire-and-forget: process for smart place detection
-      processLocationUpdate(a.familyId, a.profileId, lat, lng, isMoving ?? false)
-        .catch(err => console.warn("[PlaceDetector] Error:", err.message));
       res.json(loc);
     } catch (e: any) {
       res.status(500).json({ message: e.message });

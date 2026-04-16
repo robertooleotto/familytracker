@@ -102,7 +102,13 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || "Registrazione fallita");
+        // Prefer Zod field-level error (path + message) over the generic
+        // "Invalid request body" so the user sees WHICH field failed.
+        const fieldErr = Array.isArray(errorData.errors) && errorData.errors[0];
+        const detail = fieldErr
+          ? `${fieldErr.path ? fieldErr.path + ": " : ""}${fieldErr.message}`
+          : errorData.message;
+        throw new Error(detail || "Registrazione fallita");
       }
 
       const data = await res.json();
@@ -145,7 +151,11 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || "Errore durante l'ingresso");
+        const fieldErr = Array.isArray(errorData.errors) && errorData.errors[0];
+        const detail = fieldErr
+          ? `${fieldErr.path ? fieldErr.path + ": " : ""}${fieldErr.message}`
+          : errorData.message;
+        throw new Error(detail || "Errore durante l'ingresso");
       }
 
       const data = await res.json();
@@ -355,6 +365,9 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
                   onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
                   className={inputCls}
                 />
+                <p className="text-[11px] text-slate-400 pl-0.5">
+                  Almeno 8 caratteri, una lettera e un numero.
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -436,6 +449,9 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
                   onChange={(e) => setJoinForm({ ...joinForm, password: e.target.value })}
                   className={inputCls}
                 />
+                <p className="text-[11px] text-slate-400 pl-0.5">
+                  Almeno 8 caratteri, una lettera e un numero.
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">

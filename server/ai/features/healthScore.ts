@@ -39,16 +39,21 @@ export async function calculateHealthScore(familyId: string): Promise<HealthScor
   const prompt = `
 Calcola uno score di salute finanziaria da 0 a 100 per questa famiglia.
 100 = perfetto, 0 = situazione critica. Sii oggettivo e basato sui dati.
-Rispondi SOLO in JSON valido, senza testo aggiuntivo né markdown.
+Rispondi SOLO in JSON, nessun testo aggiuntivo.
 
 Previsione spese mese: ${JSON.stringify(forecast)}
 Anomalie rilevate: ${anomalies.length}
 Totale abbonamenti mensili: ${totalSubscriptions}€
 
-Esempio di risposta corretta:
-{"score":72,"items":[{"label":"Spese mensili nella norma","status":"ok"},{"label":"Una anomalia su Trasporti (+65%)","status":"warning"},{"label":"Abbonamenti sotto controllo","status":"ok"}],"summary":"Situazione finanziaria buona, attenzione alla voce trasporti che è cresciuta nell'ultimo mese."}
-
-Rispondi con lo stesso formato JSON:
+JSON richiesto:
+{
+  "score": 75,
+  "items": [
+    { "label": "Spese nel range normale", "status": "ok" },
+    { "label": "2 abbonamenti da rivedere", "status": "warning" }
+  ],
+  "summary": "frase riassuntiva in italiano"
+}
   `.trim();
 
   const raw = await callClaude(prompt, 400);

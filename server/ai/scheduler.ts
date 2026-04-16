@@ -5,7 +5,6 @@ import { generateEveningSummary } from "./features/eveningSummary";
 import { detectAnomalies } from "./features/anomalyDetector";
 import { checkMilestones } from "../services/milestoneChecker";
 import { learnAutonomyPatterns } from "../services/patternLearner";
-import { checkWeatherCalendarCollisions, checkRecurringVisitReminders, checkMedicationReminders, checkRoutineAnomalies } from "../services/eventReactor";
 
 function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -79,34 +78,6 @@ export function startScheduler() {
     for (const id of ids) {
       try { await learnAutonomyPatterns(id); await sleep(500); }
       catch (err: any) { console.error(`[Scheduler] Pattern learner failed for ${id}:`, err.message); }
-    }
-  });
-  scheduleCron("0 7", "Weather Calendar Check", 10, async () => {
-    const ids = await getAllFamilyIds();
-    for (const id of ids) {
-      try { await checkWeatherCalendarCollisions(id); await sleep(1000); }
-      catch (err: any) { console.error(`[Scheduler] Weather check failed for ${id}:`, err.message); }
-    }
-  });
-  scheduleCron("0 9", "Recurring Visit Reminders", 20, async () => {
-    const ids = await getAllFamilyIds();
-    for (const id of ids) {
-      try { await checkRecurringVisitReminders(id); await sleep(500); }
-      catch (err: any) { console.error(`[Scheduler] Visit reminders failed for ${id}:`, err.message); }
-    }
-  });
-  scheduleCron("30 7", "Medication Reminders", 20, async () => {
-    const ids = await getAllFamilyIds();
-    for (const id of ids) {
-      try { await checkMedicationReminders(id); await sleep(200); }
-      catch (err: any) { console.error(`[Scheduler] Medication reminders failed for ${id}:`, err.message); }
-    }
-  });
-  scheduleCron("0 10", "Routine Anomalies", 2, async () => {
-    const ids = await getAllFamilyIds();
-    for (const id of ids) {
-      try { await checkRoutineAnomalies(id); await sleep(300); }
-      catch (err: any) { console.error(`[Scheduler] Routine anomaly failed for ${id}:`, err.message); }
     }
   });
   console.log("[Scheduler] ✓ AI Scheduler active (with DB lock)");

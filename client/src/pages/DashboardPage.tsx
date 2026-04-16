@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import type { Profile, Event, Message, ShoppingItem, Task, Medication } from "@shared/schema";
 import { format, isToday, isTomorrow } from "date-fns";
-import { it } from "date-fns/locale/it";
+import { it } from "date-fns/locale";
 
 interface MemberLocation {
   profile: Profile;

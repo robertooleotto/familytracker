@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import type { Anniversary } from "@shared/schema";
 import { format, addYears, isBefore, setYear, differenceInDays, differenceInYears, parseISO } from "date-fns";
-import { it } from "date-fns/locale/it";
+import { it } from "date-fns/locale";
 
 function getNextOccurrence(date: Date) {
   const now = new Date();

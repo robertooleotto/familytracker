@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import type { Vehicle, VehicleLog, Profile } from "@shared/schema";
 import { format, differenceInDays } from "date-fns";
-import { it } from "date-fns/locale/it";
+import { it } from "date-fns/locale";
 
 const LOG_ICONS: Record<string, any> = {
   fuel: Droplets,
@@ -106,7 +106,6 @@ export default function VehiclesPage() {
       });
       toast({ title: "Veicolo aggiunto" });
     },
-    onError: (e: any) => toast({ title: "Errore", description: e.message, variant: "destructive" }),
   });
 
   const deleteVehicleMutation = useMutation({
@@ -319,7 +318,7 @@ export default function VehiclesPage() {
 
       <button
         onClick={() => setShowAddVehicle(true)}
-        className="fixed bottom-24 right-4 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-20"
+        className="fixed bottom-6 right-6 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-30"
         data-testid="button-fab-add-vehicle"
       >
         <Plus className="w-7 h-7" />

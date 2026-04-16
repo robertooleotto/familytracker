@@ -54,16 +54,20 @@ export async function generateSpendingForecast(familyId: string): Promise<Spendi
 
   const prompt = `
 Sei un analista finanziario familiare. Analizza questi dati e prevedi la spesa totale di questo mese.
-Rispondi SOLO in JSON valido, senza testo aggiuntivo né markdown.
+Rispondi SOLO in JSON, nessun testo aggiuntivo.
 
 Spese per mese (ultimi 6 mesi): ${JSON.stringify(byMonth)}
 Spese questo mese finora: ${currentMonthSpending}€
 Giorno corrente: ${dayOfMonth} di ${daysInMonth}
 
-Esempio di risposta corretta:
-{"forecast_total":1850.00,"forecast_by_category":{"Alimentari":650,"Trasporti":280,"Utenze":320,"Svago":200,"Altro":400},"trend":"above_average","advice":"Le spese alimentari sono cresciute del 15% rispetto alla media, potresti pianificare i pasti settimanali.","confidence":0.82}
-
-Rispondi con lo stesso formato JSON:
+JSON richiesto:
+{
+  "forecast_total": 0,
+  "forecast_by_category": {"Alimentari": 0},
+  "trend": "above_average",
+  "advice": "max 1 frase consiglio in italiano",
+  "confidence": 0.8
+}
   `.trim();
 
   const raw = await callClaude(prompt, 400);

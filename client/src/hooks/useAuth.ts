@@ -5,26 +5,26 @@ import type { Profile } from "@shared/schema";
 export function useAuth() {
   const [session, setSessionState] = useState(() => getSession());
 
-  const login = useCallback((profile: Profile, access_token: string, refresh_token: string = "") => {
-    setSession(profile, access_token, refresh_token);
-    setSessionState({ profile, access_token, refresh_token });
+  const login = useCallback((profile: Profile, token: string) => {
+    setSession(profile, token);
+    setSessionState({ profile, token });
   }, []);
 
-  const logout = useCallback(async () => {
-    await clearSession();
+  const logout = useCallback(() => {
+    clearSession();
     setSessionState(null);
   }, []);
 
   const updateProfile = useCallback((updatedProfile: Profile) => {
     const current = getSession();
     if (!current) return;
-    setSession(updatedProfile, current.access_token, current.refresh_token);
-    setSessionState({ profile: updatedProfile, access_token: current.access_token, refresh_token: current.refresh_token });
+    setSession(updatedProfile, current.token);
+    setSessionState({ profile: updatedProfile, token: current.token });
   }, []);
 
   return {
     profile: session?.profile ?? null,
-    token: session?.access_token ?? null,
+    token: session?.token ?? null,
     isAuthenticated: !!session,
     login,
     logout,

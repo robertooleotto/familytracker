@@ -88,9 +88,6 @@ export function registerSupabaseAuthRoutes(app: Express): void {
           name: familyName,
           inviteCode: generateInviteCode(),
         });
-        if (!family || !family.id) {
-          throw new Error("Creazione famiglia fallita: nessun record restituito dal database");
-        }
         const profile = await storage.createProfile({
           name: `${firstName} ${lastName}`,
           lastName,
@@ -109,9 +106,6 @@ export function registerSupabaseAuthRoutes(app: Express): void {
           locationPaused: false,
           authUserId,
         } as any);
-        if (!profile || !profile.id) {
-          throw new Error("Creazione profilo fallita: nessun record restituito dal database");
-        }
 
         // 3. Sign in to return a usable session token to the client. We use
         //    the admin client's signInWithPassword which works server-side.

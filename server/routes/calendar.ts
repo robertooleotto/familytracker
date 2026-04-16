@@ -47,25 +47,14 @@ export function registerCalendarRoutes(app: Express): void {
 
   app.delete("/api/events/:id", requireAuth, async (req, res) => {
     const a = req.auth!;
-    try {
-      const id = String(req.params.id).trim();
-      if (!id || id.length === 0) {
-        return res.status(400).json({ message: "Invalid event ID" });
-      }
-      await storage.deleteEvent(id, a.familyId);
-      res.json({ ok: true });
-    }
+    try { await storage.deleteEvent(req.params.id, a.familyId); res.json({ ok: true }); }
     catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
   app.patch("/api/events/:id/pickup", requireAuth, async (req, res) => {
     const a = req.auth!;
     try {
-      const id = String(req.params.id).trim();
-      if (!id || id.length === 0) {
-        return res.status(400).json({ message: "Invalid event ID" });
-      }
-      const e = await storage.confirmPickup(id, a.familyId, a.profileId);
+      const e = await storage.confirmPickup(req.params.id, a.familyId, a.profileId);
       res.json(e);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
@@ -84,9 +73,9 @@ export function registerCalendarRoutes(app: Express): void {
       const autonomyWarnings: any[] = [];
       const assigned: string[] = event.assignedTo || [];
       for (const memberId of assigned) {
-        const member = members.find((m: { id: string; name: string }) => m.id === memberId);
+        const member = members.find((m: any) => m.id === memberId);
         if (!member) continue;
-        const result = await needsDriver(event, member as unknown as typeof profiles.$inferSelect);
+        const result = await needsDriver(event, member as any);
         if (result.needed) {
           const travelMin = estimateTravelMin(event.locationName || "");
           const departureTime = calcDepartureTime(new Date(event.startAt), travelMin);
@@ -139,7 +128,7 @@ Rispondi con questo JSON:
           const travelMin = estimateTravelMin(event.locationName || "");
           const departureTime = calcDepartureTime(new Date(event.startAt), travelMin);
           const returnTime = calcReturnTime(event.endAt ? new Date(event.endAt) : null, travelMin);
-          const currentPts: Array<{ member_id: string; role: "participant" | "driver"; autonomous?: boolean; mode?: string }> = (dbEvent.participants as Array<{ member_id: string; role: string }>) || [];
+          const currentPts: any[] = (dbEvent.participants as any) || [];
           const newPts = assigned.map(mid => ({
             member_id: mid,
             role: "participant" as const,
@@ -200,11 +189,11 @@ Se non riesci a estrarre la data, usa domani. Se non sai l'ora, usa 09:00.`;
         const [ev] = await db.select().from(events).where(and(eq(events.id, event_id), eq(events.familyId, a.familyId)));
         if (!ev) return res.status(404).json({ message: "Evento non trovato" });
 
-        const currentPts: Array<{ member_id: string; role: "participant" | "driver"; autonomous?: boolean; mode?: string }> = (ev.participants as Array<{ member_id: string; role: string }>) || [];
+        const currentPts: any[] = (ev.participants as any) || [];
         const travelMin = estimateTravelMin(ev.locationName || "");
         const departureTime = calcDepartureTime(new Date(ev.startAt), travelMin);
         const returnTime = calcReturnTime(ev.endAt ? new Date(ev.endAt) : null, travelMin);
-        const currentDerived: { departure_time?: string; return_time?: string; travel_time_min?: number } = (ev.derived as Record<string, unknown>) || {};
+        const currentDerived: any = (ev.derived as any) || {};
 
         await db.update(events).set({
           participants: [
@@ -239,7 +228,7 @@ Se non riesci a estrarre la data, usa domani. Se non sai l'ora, usa 09:00.`;
         const [ev] = await db.select().from(events).where(and(eq(events.id, event_id), eq(events.familyId, a.familyId)));
         if (!ev) return res.status(404).json({ message: "Evento non trovato" });
 
-        const currentPts: Array<{ member_id: string; role: "participant" | "driver"; autonomous?: boolean; mode?: string }> = (ev.participants as Array<{ member_id: string; role: string }>) || [];
+        const currentPts: any[] = (ev.participants as any) || [];
         await db.update(events).set({
           participants: [
             ...currentPts.filter(p => p.member_id !== member_id),

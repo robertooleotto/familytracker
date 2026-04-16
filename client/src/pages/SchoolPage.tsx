@@ -206,17 +206,17 @@ function ConnectionDetail({ conn }: { conn: SchoolConnection }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/school/homework", conn.id] }),
   });
 
-  const grades = Array.isArray(gradesQ.data) ? gradesQ.data : [];
-  const absences = Array.isArray(absencesQ.data) ? absencesQ.data : [];
-  const homework = Array.isArray(homeworkQ.data) ? homeworkQ.data : [];
-  const notices = Array.isArray(noticesQ.data) ? noticesQ.data : [];
-
   const tabs = [
-    { id: "grades", label: "Voti", count: grades.length },
-    { id: "absences", label: "Assenze", count: absences.length },
-    { id: "homework", label: "Compiti", count: homework.filter(h => !h.done).length },
-    { id: "notices", label: "Avvisi", count: notices.length },
+    { id: "grades", label: "Voti", count: gradesQ.data?.length },
+    { id: "absences", label: "Assenze", count: absencesQ.data?.length },
+    { id: "homework", label: "Compiti", count: homeworkQ.data?.filter(h => !h.done).length },
+    { id: "notices", label: "Avvisi", count: noticesQ.data?.length },
   ] as const;
+
+  const grades = gradesQ.data || [];
+  const absences = absencesQ.data || [];
+  const homework = homeworkQ.data || [];
+  const notices = noticesQ.data || [];
 
   const gradesBySubject = grades.reduce((acc: Record<string, SchoolGrade[]>, g) => {
     if (!acc[g.subjectName]) acc[g.subjectName] = [];
@@ -410,10 +410,9 @@ export default function SchoolPage() {
   const [showForm, setShowForm] = useState(false);
   const [deleting, setDeleting] = useState<SchoolConnection | null>(null);
 
-  const { data: connectionsRaw = [], isLoading } = useQuery<SchoolConnection[]>({
+  const { data: connections = [], isLoading } = useQuery<SchoolConnection[]>({
     queryKey: ["/api/school/connections"],
   });
-  const connections = Array.isArray(connectionsRaw) ? connectionsRaw : [];
 
   return (
     <div className="flex-1 overflow-y-auto">

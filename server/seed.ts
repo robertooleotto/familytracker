@@ -2,22 +2,15 @@ import { db } from "./db";
 import { families, profiles, events, messages, shoppingItems, medications, homeDeadlines, tasks, rewards } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
-import { logError, logInfo } from "./lib/logger";
 
 async function hashPassword(p: string) { return bcrypt.hash(p, 12); }
 
 export async function seedDatabase() {
-  // SECURITY: Prevent seeding in production
-  if (process.env.NODE_ENV === "production") {
-    logError("[seed] FATAL: seeding disabled in production");
-    return;
-  }
-
   try {
     const existing = await db.select().from(families).limit(1);
     if (existing.length > 0) return;
 
-    logInfo("Seeding database...");
+    console.log("Seeding database...");
 
     const [family] = await db.insert(families).values({ name: "Famiglia Rossi", inviteCode: "DEMO1234" }).returning();
 
@@ -65,8 +58,8 @@ export async function seedDatabase() {
     await db.insert(tasks).values({ familyId: family.id, assignedTo: kid.id, title: "Fai i compiti", description: "Matematica e italiano", points: 20, completedAt: new Date(now.getTime() - 3600000), verifiedBy: mom.id, createdBy: mom.id });
     await db.insert(rewards).values({ profileId: kid.id, familyId: family.id, pointsTotal: 20, pointsSpent: 0 });
 
-    logInfo("✅ Seed completato! Demo: username=sarah/mike/emma, password=demo123, codice invito=DEMO1234");
+    console.log("✅ Seed completato! Demo: username=sarah/mike/emma, password=demo123, codice invito=DEMO1234");
   } catch (err) {
-    logError("Seed error", { error: err instanceof Error ? err.message : String(err) });
+    console.error("Seed error:", err);
   }
 }

@@ -43,16 +43,25 @@ export async function generateStudyPlan(familyId: string, childId: string): Prom
   const prompt = `
 Sei un assistente per lo studio. Crea un piano di studio settimanale per uno studente in italiano.
 Considera i tempi liberi tra le attività. Sessioni di studio di massimo 90 minuti con pausa.
-Rispondi SOLO in JSON valido, senza testo aggiuntivo né markdown.
+Rispondi SOLO in JSON, nessun testo aggiuntivo.
 
 Interrogazioni prossime: ${JSON.stringify(tests)}
 Attività settimanali: ${JSON.stringify(activities)}
 Data oggi: ${now.toISOString().split("T")[0]}
 
-Esempio di risposta corretta:
-{"study_sessions":[{"date":"2026-04-10","time":"15:30","duration_minutes":60,"subject":"Matematica","reason":"Due giorni prima dell'interrogazione, momento ideale per il ripasso"}],"tip":"Alterna 25 minuti di studio a 5 di pausa per mantenere alta la concentrazione."}
-
-Rispondi con lo stesso formato JSON:
+JSON richiesto:
+{
+  "study_sessions": [
+    {
+      "date": "YYYY-MM-DD",
+      "time": "HH:MM",
+      "duration_minutes": 60,
+      "subject": "Matematica",
+      "reason": "perché questo momento è ottimale"
+    }
+  ],
+  "tip": "consiglio generale in italiano"
+}
   `.trim();
 
   const raw = await callClaude(prompt, 600);

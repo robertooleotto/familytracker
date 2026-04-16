@@ -61,12 +61,6 @@ export default function BankingPage() {
 
   async function handleCallback(provider: string, code: string, state: string, connId?: string) {
     try {
-      // Verify state against saved value to prevent CSRF
-      const savedState = sessionStorage.getItem("oauth_state");
-      if (!state || state !== savedState) {
-        throw new Error("OAuth state mismatch — possible CSRF attack");
-      }
-
       let ep: string, body: any;
       switch (provider) {
         case "tink": ep = "/api/banking/tink/callback"; body = { code, connectionId: connId }; break;
@@ -86,7 +80,6 @@ export default function BankingPage() {
       } else { toast({ title: "Collegamento in attesa", description: res.message || "Riprova tra qualche secondo." }); }
     } catch (e: any) { toast({ title: "Errore", description: e.message, variant: "destructive" }); }
     cleanUrl();
-    sessionStorage.removeItem("oauth_state");
   }
 
   useEffect(() => {
@@ -129,10 +122,6 @@ export default function BankingPage() {
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/banking/connections"] });
       if (data?.authUrl) {
-        // Save OAuth state for CSRF protection before opening the window
-        const state = data.state || Math.random().toString(36).substring(2, 15);
-        sessionStorage.setItem("oauth_state", state);
-
         // Open in new top-level tab to avoid EMBED_NOT_ALLOWED errors from Tink/Salt Edge
         window.open(data.authUrl, "_blank", "noopener");
         setAwaitingOAuth(true);

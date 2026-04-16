@@ -272,7 +272,7 @@ function AddDocDialog({
               <Select value={profileId} onValueChange={setProfileId}>
                 <SelectTrigger data-testid="select-doc-profile"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {(members ?? []).map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                  {members.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -463,15 +463,13 @@ export default function DocumentiPage() {
   const [viewDoc, setViewDoc] = useState<Doc | null>(null);
   const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
 
-  const { data: membersRaw = [] } = useQuery<Profile[]>({ queryKey: ["/api/family/profiles"] });
-  const members = Array.isArray(membersRaw) ? membersRaw : [];
-  const { data: docsRaw = [], isLoading } = useQuery<Doc[]>({
+  const { data: members = [] } = useQuery<Profile[]>({ queryKey: ["/api/family/profiles"] });
+  const { data: docs = [], isLoading } = useQuery<Doc[]>({
     queryKey: ["/api/documents", activeTab],
     queryFn: () => fetch(`/api/documents?section=${activeTab}`, {
       headers: getAuthHeaders(),
     }).then(r => r.json()),
   });
-  const docs = Array.isArray(docsRaw) ? docsRaw : [];
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/documents/${id}`),
@@ -485,11 +483,11 @@ export default function DocumentiPage() {
 
   const ownerMap = useCallback((id: string | null) => {
     if (!id) return undefined;
-    return (members ?? []).find(m => m.id === id)?.name;
+    return members.find(m => m.id === id)?.name;
   }, [members]);
 
   // Filter docs
-  const filteredDocs = (docs ?? []).filter(d => {
+  const filteredDocs = docs.filter(d => {
     if (activeTab === "personal" && selectedPerson !== "all") {
       return d.profileId === selectedPerson;
     }
@@ -497,8 +495,8 @@ export default function DocumentiPage() {
   });
 
   // Expired / expiring docs for badge
-  const expiringCount = (docs ?? []).filter(d => !isExpired(d.expiresAt) && isExpiringSoon(d.expiresAt)).length;
-  const expiredCount = (docs ?? []).filter(d => isExpired(d.expiresAt)).length;
+  const expiringCount = docs.filter(d => !isExpired(d.expiresAt) && isExpiringSoon(d.expiresAt)).length;
+  const expiredCount = docs.filter(d => isExpired(d.expiresAt)).length;
 
   return (
     <div className="flex flex-col h-full bg-[#f5f5f0] dark:bg-background">
@@ -533,7 +531,7 @@ export default function DocumentiPage() {
         )}
 
         {/* Person filter (personal section only) */}
-        {activeTab === "personal" && (members ?? []).length > 0 && (
+        {activeTab === "personal" && members.length > 0 && (
           <div className="px-4 mt-3 flex gap-2 overflow-x-auto pb-1 flex-shrink-0" style={{ scrollbarWidth: "none" }}>
             <button
               onClick={() => setSelectedPerson("all")}
@@ -542,7 +540,7 @@ export default function DocumentiPage() {
             >
               Tutti
             </button>
-            {(members ?? []).map(m => (
+            {members.map(m => (
               <button
                 key={m.id}
                 onClick={() => setSelectedPerson(m.id)}
