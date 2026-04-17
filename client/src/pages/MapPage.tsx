@@ -119,12 +119,13 @@ export default function MapPage({ isActive = true }: { isActive?: boolean }) {
       L.control.zoom({ position: "topright" }).addTo(leafletMap.current);
       L.control.attribution({ position: "bottomleft", prefix: "" }).addTo(leafletMap.current);
 
-      // Voyager CartoDB tile layer (Google Maps-like: colored roads, green parks, blue water)
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-        attribution: "© OpenStreetMap · © CartoDB",
+      // Mapbox Streets tile layer (256px tiles for native Leaflet compat)
+      const mbToken = import.meta.env.VITE_MAPBOX_TOKEN || "";
+      L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=" + mbToken, {
+        attribution: '© <a href="https://www.mapbox.com/">Mapbox</a> · © <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
         maxZoom: 20,
-        subdomains: "abcd",
       }).addTo(leafletMap.current);
+
     };
     load();
     return () => {
@@ -141,7 +142,7 @@ export default function MapPage({ isActive = true }: { isActive?: boolean }) {
   useEffect(() => {
     if (isActive && leafletMap.current) {
       // Small delay allows the browser to update layout before invalidating
-      const t = setTimeout(() => leafletMap.current?.invalidateSize(), 50);
+      const t = setTimeout(() => leafletMap.current?.invalidateSize(), 150);
       return () => clearTimeout(t);
     }
   }, [isActive]);
@@ -315,7 +316,7 @@ export default function MapPage({ isActive = true }: { isActive?: boolean }) {
   };
 
   return (
-    <div className="flex flex-col h-full relative bg-[#f8f9fa] overflow-hidden" style={{ isolation: "isolate", contain: "strict" }}>
+    <div className="flex flex-col h-full relative bg-[#f8f9fa] overflow-hidden">
       <style>{`
         @keyframes mapPulse {
           0%   { transform:scale(1); opacity:0.6 }

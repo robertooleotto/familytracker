@@ -40,17 +40,33 @@ const DiarioPage          = lazy(() => import("@/pages/DiarioPage"));
 const AiFamilyChatPage    = lazy(() => import("@/pages/AiFamilyChatPage"));
 
 // ─── Error Boundary ───────────────────────────────────────────────────────────
-class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
-  constructor(props: { children: ReactNode }) {
+interface ErrorBoundaryProps {
+  children: ReactNode;
+  name?: string;
+}
+interface ErrorBoundaryState {
+  hasError: boolean;
+  errorInfo?: string;
+}
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
-  static getDerivedStateFromError() { return { hasError: true }; }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, errorInfo: error.message };
+  }
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error("[ErrorBoundary]", this.props.name || "unknown section", error, errorInfo);
+  }
   render() {
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
-          <p className="text-muted-foreground">Si è verificato un errore in questa sezione.</p>
+          <p className="text-muted-foreground">Si è verificato un errore{this.props.name ? ` in "${this.props.name}"` : " in questa sezione"}.</p>
+          {process.env.NODE_ENV === "development" && this.state.errorInfo && (
+            <p className="text-xs text-muted-foreground/60 font-mono">{this.state.errorInfo}</p>
+          )}
           <button
             className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium"
             onClick={() => this.setState({ hasError: false })}
@@ -205,8 +221,9 @@ function MoreSheet({ onSelect, onClose, onLogout }: { onSelect: (id: string) => 
           <h3 className="font-bold text-base text-slate-900">Funzionalità</h3>
           <button
             onClick={handleClose}
-            className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center active:bg-slate-200 transition-colors"
+            className="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center active:bg-slate-200 transition-colors"
             data-testid="button-close-more"
+            aria-label="Chiudi menu"
           >
             <X className="w-4 h-4 text-slate-600" />
           </button>
@@ -287,7 +304,7 @@ function BottomNav({
 
   return (
     <nav
-      className="flex flex-shrink-0 border-t border-border bg-background"
+      className="flex flex-shrink-0 niva-nav"
       style={{
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
@@ -299,51 +316,38 @@ function BottomNav({
           <button
             key={id}
             onClick={() => handleClick(id)}
-            className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 relative"
+            className="flex-1 flex flex-col items-center justify-center py-2 gap-[3px] relative"
             style={{
               transform: isPressed ? "scale(0.88)" : "scale(1)",
               transition: "transform 0.12s cubic-bezier(0.34,1.56,0.64,1)",
             }}
             data-testid={`nav-${id}`}
           >
-            {/* Active pill / glow behind icon */}
+            {/* Active dot above icon */}
             {isActive && (
-              <div
-                className="absolute rounded-2xl"
-                style={{
-                  top: 6,
-                  width: 44,
-                  height: 30,
-                  background: "rgba(59,130,246,0.10)",
-                  transition: "opacity 0.2s",
-                }}
+              <span
+                className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
+                style={{ background: "#fff" }}
               />
             )}
             <Icon
-              className="w-[22px] h-[22px] relative z-10"
-              strokeWidth={isActive ? 2.5 : 1.75}
+              className="w-5 h-5"
+              strokeWidth={isActive ? 2 : 1.6}
               style={{
-                color: isActive ? "#3B82F6" : "#94a3b8",
-                transition: "color 0.18s, transform 0.18s",
-                transform: isActive ? "scale(1.1)" : "scale(1)",
+                color: isActive ? "#fff" : "rgba(255,255,255,.3)",
+                transition: "color 0.15s",
               }}
             />
             <span
-              className="text-[10px] font-semibold relative z-10"
+              className="text-[10px] relative z-10"
               style={{
-                color: isActive ? "#3B82F6" : "#94a3b8",
-                transition: "color 0.18s",
+                color: isActive ? "#fff" : "rgba(255,255,255,.3)",
+                fontWeight: isActive ? 600 : 400,
+                transition: "color 0.15s",
               }}
             >
               {label}
             </span>
-            {/* Active dot */}
-            {isActive && (
-              <span
-                className="absolute bottom-[3px] w-1 h-1 rounded-full"
-                style={{ background: "#3B82F6" }}
-              />
-            )}
           </button>
         );
       })}
@@ -394,7 +398,7 @@ function MainApp() {
 
   if (profile && !profile.onboardingCompleted) {
     return (
-      <div className="flex flex-col h-screen max-w-md mx-auto overflow-hidden shadow-2xl relative bg-background">
+      <div className="flex flex-col h-screen max-w-md mx-auto overflow-hidden shadow-2xl relative niva-bg">
         <OnboardingPage
           profile={profile}
           token={token || ""}
@@ -406,26 +410,26 @@ function MainApp() {
 
   return (
     <AuthContext.Provider value={{ profile, token, isAuthenticated, login, logout }}>
-      <div className="flex flex-col h-screen max-w-md mx-auto overflow-hidden shadow-2xl relative bg-background">
+      <div className="flex flex-col h-screen max-w-md mx-auto overflow-hidden shadow-2xl relative niva-bg">
 
         {/* ── Top header (all tabs except briefing) ── */}
         {activeTab !== "briefing" && (
           <header
-            className={`flex items-center justify-between px-4 py-3 flex-shrink-0 border-b border-border ${activeTab === "map" ? "bg-background/[0.96]" : "bg-background"}`}
-            style={activeTab === "map" ? { backdropFilter: "blur(16px)" } : undefined}
+            className="flex items-center justify-between px-4 py-3 flex-shrink-0"
+            style={{ background: "rgba(0,0,0,.15)" }}
           >
             <div className="flex items-center gap-2.5">
               <div
                 className="w-7 h-7 rounded-lg flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg,#3B82F6,#6366F1)" }}
+                style={{ background: "linear-gradient(135deg,#E8533A,#9B30B0)" }}
               >
                 <span className="text-white text-[10px] font-black">FT</span>
               </div>
-              <span className="font-bold text-[15px] text-foreground">{PAGE_TITLES[activeTab] || "FamilyTracker"}</span>
+              <span className="font-bold text-[15px] text-white">{PAGE_TITLES[activeTab] || "FamilyTracker"}</span>
             </div>
             <button
               className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold active:scale-90 transition-transform"
-              style={{ backgroundColor: profile?.colorHex || "#3B82F6" }}
+              style={{ backgroundColor: profile?.colorHex || "#E8533A" }}
               onClick={() => { haptics.tap(); setActiveTab("settings"); }}
               data-testid="button-header-avatar"
             >
@@ -436,7 +440,7 @@ function MainApp() {
 
         {/* ── Page content ── */}
         <main className="flex-1 overflow-hidden flex flex-col min-h-0 relative" style={{ zIndex: 0 }}>
-          <ErrorBoundary>
+          <ErrorBoundary name={activeTab}>
             <Suspense fallback={<div className="flex-1 flex items-center justify-center"><div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>}>
               {activeTab === "briefing"       && <BriefingPage onNavigate={setActiveTab} />}
               {/* MapPage: mounted on first visit, then kept alive via display:none to avoid Leaflet artifacts */}

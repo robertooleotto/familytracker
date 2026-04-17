@@ -2,6 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Leaflet critical overrides ──
+   Tailwind preflight + Vite bundling can break Leaflet's CDN CSS.
+   These rules ensure positioning, overflow, and image sizing are correct
+   regardless of load order or CORS issues with the CDN stylesheet. */
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer {
+  position: absolute !important;
+  left: 0;
+  top: 0;
+}
+.leaflet-container {
+  overflow: hidden !important;
+}
+.leaflet-container img {
+  max-width: none !important;
+  max-height: none !important;
+}
+.leaflet-tile {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  visibility: visible; /* Leaflet fade-in uses visibility */
+}
+.leaflet-tile-container {
+  pointer-events: none;
+}
+
 /*
   KINLY — Design Tokens · Palette A Coral/Navy
   Primario: Coral #E8533A  |  Surface: Navy #1A2535
@@ -381,4 +416,86 @@
   /* Scrollbar nascosta per strip orizzontali */
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   KINLY NIVA — Gradient / Glass / AI-first Design System
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --niva-gradient: linear-gradient(170deg,
+    #F2E6D4 0%,
+    #EDDDCA 12%,
+    #E8A87C 25%,
+    #E8537A 42%,
+    #D63384 55%,
+    #9B30B0 68%,
+    #4C5FD5 82%,
+    #2555C8 100%
+  );
+
+  /* Glass hierarchy */
+  --glass-primary:       rgba(255,255,255,.35);
+  --glass-primary-border: rgba(255,255,255,.4);
+  --glass-secondary:     rgba(255,255,255,.30);
+  --glass-secondary-border: rgba(255,255,255,.35);
+  --glass-tertiary:      rgba(255,255,255,.25);
+  --glass-tertiary-border: rgba(255,255,255,.35);
+  --glass-quaternary:    rgba(255,255,255,.15);
+  --glass-quaternary-border: rgba(255,255,255,.20);
+  --glass-shadow:        0 8px 32px rgba(0,0,0,.12);
+  --glass-shadow-sm:     0 2px 8px rgba(0,0,0,.08);
+
+  /* Niva palette */
+  --niva-beige:    #F2E6D4;
+  --niva-cream:    #EDDDCA;
+  --niva-peach:    #E8A87C;
+  --niva-coral:    #E8533A;
+  --niva-pink:     #E8537A;
+  --niva-magenta:  #D63384;
+  --niva-violet:   #9B30B0;
+  --niva-indigo:   #4C5FD5;
+  --niva-blue:     #2555C8;
+  --niva-green:    #2E7D32;
+
+  /* Text on gradient zones */
+  --niva-text-warm:      rgba(40,25,15,.85);
+  --niva-text-warm-sec:  rgba(60,35,15,.7);
+  --niva-text-light:     #fff;
+  --niva-text-light-sec: rgba(255,255,255,.5);
+  --niva-text-light-ter: rgba(255,255,255,.35);
+
+  /* Bottom nav */
+  --niva-nav-bg:         rgba(15,15,50,.6);
+  --niva-nav-border:     rgba(255,255,255,.08);
+}
+
+/* Glass card utility classes */
+.glass-primary {
+  background: var(--glass-primary);
+  border: 1px solid var(--glass-primary-border);
+  box-shadow: var(--glass-shadow);
+}
+.glass-secondary {
+  background: var(--glass-secondary);
+  border: 1px solid var(--glass-secondary-border);
+}
+.glass-tertiary {
+  background: var(--glass-tertiary);
+  border: 1px solid var(--glass-tertiary-border);
+}
+.glass-quaternary {
+  background: var(--glass-quaternary);
+  border: 1px solid var(--glass-quaternary-border);
+}
+
+/* Niva gradient background */
+.niva-bg {
+  background: var(--niva-gradient);
+}
+
+/* Niva bottom nav */
+.niva-nav {
+  background: var(--niva-nav-bg);
+  border-top: 1px solid var(--niva-nav-border);
 }

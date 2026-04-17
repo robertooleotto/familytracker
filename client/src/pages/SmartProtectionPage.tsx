@@ -529,7 +529,7 @@ function NarrativeTab() {
     setLoading(true);
     setNarrative(null);
     try {
-      const res = await fetch(`/api/ai/narrative/${memberId}`, { headers: getAuthHeaders() });
+      const res = await fetch(`/api/ai/narrative/${memberId}`, { headers: await getAuthHeaders() });
       const data = await res.json();
       setNarrative(data.narrative);
     } catch {
@@ -892,7 +892,7 @@ export default function SmartProtectionPage() {
             className={`flex flex-col items-center gap-0.5 px-3 py-2.5 min-w-[64px] transition-colors relative ${activeTab === t.id ? "text-foreground border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
           >
             <t.icon className="w-4 h-4" style={{ color: activeTab === t.id ? t.color : undefined }} />
-            <span className="text-[9px] font-medium whitespace-nowrap">{t.label}</span>
+            <span className="text-[11px] font-medium whitespace-nowrap">{t.label}</span>
           </button>
         ))}
       </div>

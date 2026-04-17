@@ -183,10 +183,10 @@ function ConnectionDetail({ conn }: { conn: SchoolConnection }) {
   const [tab, setTab] = useState<"grades" | "absences" | "homework" | "notices">("grades");
   const [expandedNotice, setExpandedNotice] = useState<string | null>(null);
 
-  const gradesQ = useQuery<SchoolGrade[]>({ queryKey: ["/api/school/grades", conn.id], queryFn: () => fetch(`/api/school/grades/${conn.id}`, { headers: getAuthHeaders() }).then(r => r.json()) });
-  const absencesQ = useQuery<SchoolAbsence[]>({ queryKey: ["/api/school/absences", conn.id], queryFn: () => fetch(`/api/school/absences/${conn.id}`, { headers: getAuthHeaders() }).then(r => r.json()) });
-  const homeworkQ = useQuery<SchoolHomework[]>({ queryKey: ["/api/school/homework", conn.id], queryFn: () => fetch(`/api/school/homework/${conn.id}`, { headers: getAuthHeaders() }).then(r => r.json()) });
-  const noticesQ = useQuery<SchoolNotice[]>({ queryKey: ["/api/school/notices", conn.id], queryFn: () => fetch(`/api/school/notices/${conn.id}`, { headers: getAuthHeaders() }).then(r => r.json()) });
+  const gradesQ = useQuery<SchoolGrade[]>({ queryKey: ["/api/school/grades", conn.id], queryFn: async () => fetch(`/api/school/grades/${conn.id}`, { headers: await getAuthHeaders() }).then(r => r.json()) });
+  const absencesQ = useQuery<SchoolAbsence[]>({ queryKey: ["/api/school/absences", conn.id], queryFn: async () => fetch(`/api/school/absences/${conn.id}`, { headers: await getAuthHeaders() }).then(r => r.json()) });
+  const homeworkQ = useQuery<SchoolHomework[]>({ queryKey: ["/api/school/homework", conn.id], queryFn: async () => fetch(`/api/school/homework/${conn.id}`, { headers: await getAuthHeaders() }).then(r => r.json()) });
+  const noticesQ = useQuery<SchoolNotice[]>({ queryKey: ["/api/school/notices", conn.id], queryFn: async () => fetch(`/api/school/notices/${conn.id}`, { headers: await getAuthHeaders() }).then(r => r.json()) });
 
   const sync = useMutation({
     mutationFn: () => apiRequest("POST", `/api/school/sync/${conn.id}`, {}),
@@ -279,8 +279,8 @@ function ConnectionDetail({ conn }: { conn: SchoolConnection }) {
                         {gs.map(g => (
                           <div key={g.id} data-testid={`grade-${g.id}`} className="flex flex-col items-center bg-muted/40 rounded-lg px-2 py-1 min-w-[48px]">
                             <span className={`text-base font-black leading-none ${gradeColor(g.grade)}`}>{gradeLabel(g.grade, g.gradeStr)}</span>
-                            <span className="text-[9px] text-muted-foreground mt-0.5">{fmtDate(g.date)}</span>
-                            {g.type && <span className="text-[9px] text-muted-foreground">{g.type}</span>}
+                            <span className="text-[11px] text-muted-foreground mt-0.5">{fmtDate(g.date)}</span>
+                            {g.type && <span className="text-[11px] text-muted-foreground">{g.type}</span>}
                           </div>
                         ))}
                       </div>

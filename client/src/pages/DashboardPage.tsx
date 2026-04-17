@@ -175,16 +175,16 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
   const weatherGrad = weather ? WEATHER_GRADIENTS[weather.icon] : "from-sky-400 to-blue-600";
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#f0f2f5]" data-testid="dashboard-cruscotto">
+    <div className="flex-1 overflow-y-auto bg-background" data-testid="dashboard-cruscotto">
 
       {/* ── Header ── */}
-      <div className="sticky top-0 z-10 px-4 pt-3 pb-2 bg-[#f0f2f5]/90 backdrop-blur-md flex justify-between items-center">
+      <div className="sticky top-0 z-10 px-4 pt-3 pb-2 bg-background/90 backdrop-blur-md flex justify-between items-center">
         <span className="font-bold text-sm tracking-tight text-neutral-800">FamilyTracker</span>
         <span className="text-[11px] text-neutral-500 font-medium">{dateLabel} · {timeLabel}</span>
       </div>
 
       {/* ── Family Avatar Strip ── */}
-      <div className="sticky top-[40px] z-10 px-4 pb-2 bg-[#f0f2f5]/90 backdrop-blur-md flex gap-3 items-center">
+      <div className="sticky top-[40px] z-10 px-4 pb-2 bg-background/90 backdrop-blur-md flex gap-3 items-center">
         {loadingMembers ? (
           Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="w-8 h-8 rounded-full" />
@@ -203,7 +203,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
               >
                 {member.profile.name.charAt(0).toUpperCase()}
               </div>
-              <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#f0f2f5] ${isOnline(member) ? "bg-green-500" : "bg-gray-400"}`} />
+              <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${isOnline(member) ? "bg-green-500" : "bg-gray-400"}`} />
             </button>
           ))
         )}
@@ -268,7 +268,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
           <div className="relative z-10 p-4 flex flex-col h-full flex-1">
             <div className="flex justify-between items-center mb-3">
               <div className="font-semibold text-sm text-neutral-800">Posizioni famiglia</div>
-              <span className="text-xs text-blue-500 font-medium flex items-center gap-0.5">
+              <span className="text-xs font-medium flex items-center gap-0.5" style={{ color: "#E8533A" }}>
                 Apri <ChevronRight size={13} />
               </span>
             </div>

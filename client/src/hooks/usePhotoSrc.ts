@@ -25,6 +25,12 @@ export function photoSrcFromPath(objectPath: string | null | undefined): string 
  * Build fetch headers for authenticated photo requests.
  */
 export function getAuthHeaders(): HeadersInit {
-  const token = localStorage.getItem("token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  try {
+    const raw = localStorage.getItem("ft_session");
+    if (!raw) return {};
+    const session = JSON.parse(raw);
+    return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+  } catch {
+    return {};
+  }
 }
