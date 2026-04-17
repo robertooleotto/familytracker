@@ -81,16 +81,16 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 }
 import {
   LayoutDashboard, MapPin, MessageCircle, Calendar, ShoppingCart,
-  Shield, Pill, Home, Star, Settings, X, Wallet,
+  Shield, Pill, Home, Star, Settings, X, Wallet, Menu,
   PawPrint, Car, Phone, UtensilsCrossed, Sparkles, GraduationCap, ShieldCheck, ChefHat, FolderOpen, Heart, BookOpen, Map, Bot, LogOut,
 } from "lucide-react";
 
 const MAIN_TABS = [
-  { id: "briefing", label: "Home",   icon: Home },
+  { id: "briefing", label: "Home",   icon: Sparkles },
   { id: "map",      label: "Mappa",  icon: MapPin },
   { id: "chat",     label: "Chat",   icon: MessageCircle },
   { id: "calendar", label: "Agenda", icon: Calendar },
-  { id: "more",     label: "Altro",  icon: Settings },
+  { id: "more",     label: "Altro",  icon: Menu },
 ];
 
 const MORE_SECTIONS = [
@@ -304,9 +304,10 @@ function BottomNav({
 
   return (
     <nav
-      className="flex flex-shrink-0 niva-nav"
+      className="flex items-center justify-around flex-shrink-0 niva-nav"
       style={{
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        padding: "8px 16px 10px",
+        paddingBottom: `max(10px, env(safe-area-inset-bottom, 10px))`,
       }}
     >
       {MAIN_TABS.map(({ id, label, icon: Icon }) => {
@@ -316,18 +317,22 @@ function BottomNav({
           <button
             key={id}
             onClick={() => handleClick(id)}
-            className="flex-1 flex flex-col items-center justify-center py-2 gap-[3px] relative"
+            className="relative flex flex-col items-center gap-[3px]"
             style={{
+              padding: "4px 14px",
               transform: isPressed ? "scale(0.88)" : "scale(1)",
               transition: "transform 0.12s cubic-bezier(0.34,1.56,0.64,1)",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
             }}
             data-testid={`nav-${id}`}
           >
             {/* Active dot above icon */}
             {isActive && (
               <span
-                className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
-                style={{ background: "#fff" }}
+                className="absolute top-0 left-1/2 -translate-x-1/2 rounded-full"
+                style={{ width: "4px", height: "4px", background: "#fff" }}
               />
             )}
             <Icon
@@ -339,7 +344,7 @@ function BottomNav({
               }}
             />
             <span
-              className="text-[10px] relative z-10"
+              className="text-[10px]"
               style={{
                 color: isActive ? "#fff" : "rgba(255,255,255,.3)",
                 fontWeight: isActive ? 600 : 400,

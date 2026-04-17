@@ -5,9 +5,9 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Check, Mic, Plus, Sun, Sunrise, Sunset, Moon,
+  Check, Mic, Plus, Sun, Sunrise, Sunset, Moon, MapPin, Settings,
   Send, Cloud, CloudRain, CloudSnow, CloudLightning, CloudSun,
-  ArrowRight, Clock, MoreVertical,
+  ArrowRight, Clock,
 } from "lucide-react";
 import type { Profile, Event, ShoppingItem, Task, Medication } from "@shared/schema";
 import { format, isToday, isTomorrow, addDays } from "date-fns";
@@ -398,23 +398,30 @@ export default function BriefingPage({ onNavigate }: BriefingPageProps) {
       <div className="flex-1 overflow-y-auto no-scrollbar pb-4">
 
         {/* ── HEADER ROW (Kinly Niva) ── */}
-        <div className="px-5 pt-6 pb-4 flex items-center justify-between">
-          <button onClick={() => onNavigate("map")} className="p-1.5 rounded-full transition-colors active:scale-90" style={{ color: "rgba(80,50,30,.5)" }} data-testid="button-clock">
-            <Clock size={18} />
+        <div className="px-5 flex items-center justify-between" style={{ paddingTop: "16px", paddingBottom: "8px" }}>
+          <button onClick={() => onNavigate("map")} className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform" style={{ color: "rgba(80,50,30,.5)" }} data-testid="button-clock">
+            <Clock size={20} />
           </button>
-          <h1 className="text-[17px] font-bold" style={{ color: "var(--niva-text-warm)" }}>
+          <h1 className="text-[17px] font-bold" style={{ color: "rgba(40,25,15,.85)", letterSpacing: "-.2px" }}>
             Famiglia {profile?.name?.split(" ").slice(-1)[0] ?? ""}
           </h1>
-          <button onClick={() => onNavigate("settings")} className="p-1.5 rounded-full transition-colors active:scale-90" style={{ color: "rgba(80,50,30,.5)" }} data-testid="button-settings">
-            <MoreVertical size={18} />
+          <button onClick={() => onNavigate("settings")} className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform" style={{ color: "rgba(80,50,30,.5)" }} data-testid="button-settings">
+            <Settings size={20} />
           </button>
         </div>
 
         {/* ── FAMILY MEMBER AVATARS ROW ── */}
         {(members ?? []).length > 0 && (
-          <div className="flex gap-2 px-4 pb-4 justify-center overflow-x-auto no-scrollbar items-center flex-wrap">
-            {(members ?? []).map(m => {
+          <div className="flex gap-[14px] px-5 pb-3 justify-center overflow-x-auto no-scrollbar items-center">
+            {(members ?? []).map((m, i) => {
               const online = isOnline(m);
+              /* Gradient palette per avatar — ruota tra 4 combinazioni come nel mockup */
+              const AVATAR_GRADIENTS = [
+                "linear-gradient(135deg,#E8533A,#D63384)",
+                "linear-gradient(135deg,#9B30B0,#D63384)",
+                "linear-gradient(135deg,#2E7D32,#4C5FD5)",
+                "linear-gradient(135deg,#E8A87C,#E8537A)",
+              ];
               return (
                 <button
                   key={m.profile.id}
@@ -423,16 +430,17 @@ export default function BriefingPage({ onNavigate }: BriefingPageProps) {
                   data-testid={`member-avatar-${m.profile.id}`}
                 >
                   <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                    className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold"
                     style={{
-                      backgroundColor: m.profile.colorHex || "var(--niva-indigo)",
-                      border: "2.5px solid rgba(255,255,255,.35)",
+                      background: AVATAR_GRADIENTS[i % AVATAR_GRADIENTS.length],
+                      border: "2.5px solid rgba(255,255,255,.5)",
+                      boxShadow: "0 2px 8px rgba(0,0,0,.1)",
                       opacity: online ? 1 : 0.6,
                     }}
                   >
                     {m.profile.name.charAt(0)}
                   </div>
-                  <span className="text-[10px]" style={{ color: "var(--niva-text-warm-sec)" }}>
+                  <span className="text-[10px] font-semibold" style={{ color: "var(--niva-text-warm-sec)", letterSpacing: ".3px" }}>
                     {m.profile.name.split(" ")[0]}
                   </span>
                 </button>
@@ -445,15 +453,16 @@ export default function BriefingPage({ onNavigate }: BriefingPageProps) {
               data-testid="button-add-member"
             >
               <div
-                className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg"
+                className="w-12 h-12 rounded-full flex items-center justify-center text-lg"
                 style={{
-                  border: "2.5px dashed rgba(255,255,255,.35)",
-                  background: "transparent",
+                  border: "2.5px dashed rgba(255,255,255,.5)",
+                  background: "rgba(255,255,255,.2)",
+                  color: "rgba(60,35,15,.5)",
                 }}
               >
                 <Plus size={18} />
               </div>
-              <span className="text-[10px]" style={{ color: "var(--niva-text-warm-sec)" }}>
+              <span className="text-[10px] font-semibold" style={{ color: "var(--niva-text-warm-sec)", letterSpacing: ".3px" }}>
                 Aggiungi
               </span>
             </button>
@@ -461,106 +470,136 @@ export default function BriefingPage({ onNavigate }: BriefingPageProps) {
         )}
 
         {/* ── AI CARD (MAIN) ── */}
-        <div className="px-4 pb-4">
-          <div className="glass-primary rounded-[28px] p-6 min-h-[320px] flex flex-col">
+        <div style={{ margin: "8px 20px 0" }}>
+          <div
+            className="rounded-[28px] overflow-hidden min-h-[320px] flex flex-col"
+            style={{
+              background: "rgba(255,255,255,.35)",
+              border: "1px solid rgba(255,255,255,.4)",
+              boxShadow: "0 8px 32px rgba(0,0,0,.12)",
+            }}
+          >
             {/* AI Card Content */}
-            {aiSummaryLoading ? (
-              <div className="space-y-3">
-                <div className="h-4 w-32 rounded animate-pulse" style={{ background: "rgba(255,255,255,.2)" }} />
-                <div className="h-8 w-full rounded animate-pulse" style={{ background: "rgba(255,255,255,.15)" }} />
-                <div className="h-6 w-3/4 rounded animate-pulse" style={{ background: "rgba(255,255,255,.15)" }} />
-              </div>
-            ) : (
-              <>
-                <p className="text-[12px] uppercase tracking-[2px] mb-2" style={{ color: "rgba(255,255,255,.5)" }}>
-                  CIAO {firstName?.toUpperCase()}!
-                </p>
-                {aiSummaryData?.text || aiReply ? (
-                  <p className="text-[16px] font-normal text-white leading-relaxed flex-1" style={{ textShadow: "0 2px 8px rgba(0,0,0,.1)" }}>
-                    {aiSummaryData?.text || aiReply}
+            <div className="flex flex-col items-center flex-1" style={{ padding: "28px 24px 0" }}>
+              {aiSummaryLoading ? (
+                <div className="space-y-3 w-full">
+                  <div className="h-4 w-32 rounded animate-pulse" style={{ background: "rgba(255,255,255,.2)" }} />
+                  <div className="h-8 w-full rounded animate-pulse" style={{ background: "rgba(255,255,255,.15)" }} />
+                  <div className="h-6 w-3/4 rounded animate-pulse" style={{ background: "rgba(255,255,255,.15)" }} />
+                </div>
+              ) : (
+                <>
+                  <p className="text-[12px] font-bold uppercase mb-1.5" style={{ color: "rgba(255,255,255,.5)", letterSpacing: "2px" }}>
+                    Ciao {firstName}!
                   </p>
-                ) : (
-                  <>
-                    <h2 className="text-[26px] font-[800] text-white mb-4 leading-tight" style={{ letterSpacing: "-.5px", textShadow: "0 2px 8px rgba(0,0,0,.1)" }}>
-                      Come posso aiutarti oggi?
-                    </h2>
-                    <div className="flex gap-2 mb-auto flex-wrap">
-                      <button
-                        onClick={() => { setAiInput("Aggiungi attività"); }}
-                        className="glass-tertiary px-4 py-2 rounded-[20px] text-[13px] text-white font-medium active:scale-95 transition-transform"
-                        data-testid="button-ai-add-task"
-                      >
-                        Aggiungi attività
-                      </button>
-                      <button
-                        onClick={() => { setAiInput("Organizza calendario"); }}
-                        className="glass-tertiary px-4 py-2 rounded-[20px] text-[13px] text-white font-medium active:scale-95 transition-transform"
-                        data-testid="button-ai-organize-cal"
-                      >
-                        Organizza calendario
-                      </button>
-                      <button
-                        onClick={() => { setAiInput("Delega attività"); }}
-                        className="glass-tertiary px-4 py-2 rounded-[20px] text-[13px] text-white font-medium active:scale-95 transition-transform"
-                        data-testid="button-ai-delegate"
-                      >
-                        Delega attività
-                      </button>
-                    </div>
-                  </>
-                )}
-              </>
-            )}
+                  {aiSummaryData?.text || aiReply ? (
+                    <p className="text-[16px] font-normal text-white leading-relaxed flex-1 text-center" style={{ textShadow: "0 1px 8px rgba(0,0,0,.1)" }}>
+                      {aiSummaryData?.text || aiReply}
+                    </p>
+                  ) : (
+                    <>
+                      <h2 className="text-[26px] font-[800] text-white mb-5 text-center leading-[1.25]" style={{ letterSpacing: "-.5px", textShadow: "0 1px 8px rgba(0,0,0,.1)" }}>
+                        Come posso aiutarti oggi?
+                      </h2>
+                      <div className="flex gap-2 mb-auto flex-wrap justify-center" style={{ paddingBottom: "16px" }}>
+                        <button
+                          onClick={() => { setAiInput("Aggiungi attività"); }}
+                          className="text-[13px] font-medium text-white active:scale-95 transition-all"
+                          style={{ padding: "8px 18px", borderRadius: "20px", background: "rgba(255,255,255,.25)", border: "1px solid rgba(255,255,255,.35)" }}
+                          data-testid="button-ai-add-task"
+                        >
+                          Aggiungi attività
+                        </button>
+                        <button
+                          onClick={() => { setAiInput("Organizza calendario"); }}
+                          className="text-[13px] font-medium text-white active:scale-95 transition-all"
+                          style={{ padding: "8px 18px", borderRadius: "20px", background: "rgba(255,255,255,.25)", border: "1px solid rgba(255,255,255,.35)" }}
+                          data-testid="button-ai-organize-cal"
+                        >
+                          Organizza calendario
+                        </button>
+                        <button
+                          onClick={() => { setAiInput("Delega attività"); }}
+                          className="text-[13px] font-medium text-white active:scale-95 transition-all"
+                          style={{ padding: "8px 18px", borderRadius: "20px", background: "rgba(255,255,255,.25)", border: "1px solid rgba(255,255,255,.35)" }}
+                          data-testid="button-ai-delegate"
+                        >
+                          Delega attività
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
 
-            {/* AI Input Bar */}
-            <div className="relative mt-auto pt-4">
-              <input
-                ref={inputRef}
-                type="text"
-                value={aiInput}
-                onChange={e => setAiInput(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && sendMessage()}
-                placeholder="Chiedi qualcosa..."
-                disabled={aiMutation.isPending}
-                className="glass-secondary w-full rounded-[28px] py-3 pl-5 pr-14 text-[13px] text-white placeholder-white/40 disabled:opacity-60 transition-all focus:outline-none"
-                data-testid="input-ai-briefing"
-              />
-              <button
-                onClick={sendMessage}
-                disabled={aiMutation.isPending || !aiInput.trim()}
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full flex items-center justify-center transition-all disabled:opacity-50 active:scale-90"
-                style={{ background: "rgba(255,255,255,.1)" }}
-                data-testid="button-ai-send-briefing"
+            {/* AI Input Bar (separate wrapper like mockup) */}
+            <div style={{ padding: "0 20px 20px" }}>
+              <div
+                className="flex items-center gap-2"
+                style={{
+                  background: "rgba(255,255,255,.3)",
+                  border: "1px solid rgba(255,255,255,.35)",
+                  borderRadius: "28px",
+                  padding: "6px 6px 6px 18px",
+                }}
               >
-                <Send size={14} className="text-white" />
-              </button>
-              <button
-                onClick={() => {}}
-                className="absolute right-14 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-                style={{ background: "#4C5FD5", color: "white" }}
-                data-testid="button-ai-mic"
-              >
-                <Mic size={14} />
-              </button>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={aiInput}
+                  onChange={e => setAiInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && sendMessage()}
+                  placeholder="Chiedi qualcosa..."
+                  disabled={aiMutation.isPending}
+                  className="flex-1 text-[14px] text-white bg-transparent border-none outline-none disabled:opacity-60"
+                  style={{ fontFamily: "inherit" }}
+                  data-testid="input-ai-briefing"
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={aiMutation.isPending || !aiInput.trim()}
+                  className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all disabled:opacity-50 active:scale-90"
+                  style={{ background: aiInput.trim() ? "rgba(255,255,255,.25)" : "rgba(255,255,255,.1)" }}
+                  data-testid="button-ai-send-briefing"
+                >
+                  <Send size={14} className="text-white" />
+                </button>
+                <button
+                  onClick={() => {}}
+                  className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 active:scale-90"
+                  style={{ background: "#4C5FD5", boxShadow: "0 2px 8px rgba(76,95,213,.3)" }}
+                  data-testid="button-ai-mic"
+                >
+                  <Mic size={16} className="text-white" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
         {/* ── I TUOI IMPEGNI (UPCOMING EVENTS) ── */}
         {upcomingEvents.length > 0 && (
-          <div className="px-4 pb-4">
-            <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="flex items-center justify-between" style={{ padding: "20px 20px 12px" }}>
               <h3 className="text-[17px] font-bold text-white">I tuoi impegni</h3>
-              <button onClick={() => onNavigate("calendar")} className="text-[13px] text-white/60 hover:text-white transition-colors" data-testid="button-see-all-events">
+              <button onClick={() => onNavigate("calendar")} className="text-[13px] font-medium transition-colors" style={{ color: "rgba(255,255,255,.5)" }} data-testid="button-see-all-events">
                 Vedi tutti
               </button>
             </div>
             {/* Filter Pills (horizontal scroll) */}
-            <div className="flex gap-2 mb-3 overflow-x-auto no-scrollbar">
-              {["TUTTI", "FIGLI", "GENITORI", "CASA"].map(filter => (
+            <div className="flex gap-2 overflow-x-auto no-scrollbar" style={{ padding: "0 20px 14px" }}>
+              {["TUTTI", "FIGLI", "GENITORI", "CASA"].map((filter, idx) => (
                 <button
                   key={filter}
-                  className="glass-secondary px-4 py-2 rounded-[20px] text-[12px] text-white font-medium flex-shrink-0 active:scale-95 transition-transform"
+                  className="px-4 py-1.5 rounded-[20px] text-[11px] font-bold flex-shrink-0 active:scale-95 transition-all"
+                  style={idx === 0 ? {
+                    background: "rgba(255,255,255,.35)", color: "#fff",
+                    border: "1px solid rgba(255,255,255,.4)", letterSpacing: ".5px",
+                  } : {
+                    background: "rgba(255,255,255,.15)", color: "rgba(255,255,255,.5)",
+                    border: "1px solid rgba(255,255,255,.2)", letterSpacing: ".5px",
+                  }}
                   data-testid={`filter-${filter}`}
                 >
                   {filter}
@@ -568,44 +607,61 @@ export default function BriefingPage({ onNavigate }: BriefingPageProps) {
               ))}
             </div>
             {/* Activity Cards (horizontal scroll) */}
-            <div className="flex gap-3 overflow-x-auto no-scrollbar" style={{ scrollSnapType: "x mandatory" }}>
+            <div className="flex gap-3 overflow-x-auto no-scrollbar" style={{ scrollSnapType: "x mandatory", padding: "0 20px 16px" }}>
               {upcomingEvents.slice(0, 6).map(event => {
                 const eventTime = format(new Date(event.startAt), "H:mm", { locale: it });
                 const assignedMember = (members ?? []).find(m => (event.assignedTo ?? []).includes(m.profile.id));
-                const tagColor = event.category === "health" ? "var(--niva-magenta)" : event.category === "school" ? "var(--niva-blue)" : event.category === "sport" ? "var(--niva-green)" : "var(--niva-coral)";
+                /* Tag con sfondo semi-trasparente e testo chiaro (come mockup) */
+                const tagStyle = event.category === "health"
+                  ? { bg: "rgba(214,51,132,.2)", color: "#F0A0C0", label: "SALUTE" }
+                  : event.category === "school"
+                  ? { bg: "rgba(76,95,213,.2)", color: "#8CA0F0", label: "SCUOLA" }
+                  : event.category === "sport"
+                  ? { bg: "rgba(46,125,50,.2)", color: "#66BB6A", label: "SPORT" }
+                  : { bg: "rgba(232,83,58,.2)", color: "#F0A080", label: event.category?.toUpperCase() ?? "EVENT" };
                 return (
                   <button
                     key={event.id}
                     onClick={() => onNavigate("calendar")}
-                    className="glass-secondary rounded-[20px] p-4 flex-shrink-0 w-[240px] flex flex-col active:scale-95 transition-transform"
-                    style={{ scrollSnapAlign: "start" }}
+                    className="rounded-[20px] p-4 flex-shrink-0 w-[240px] flex flex-col active:scale-95 transition-transform"
+                    style={{
+                      scrollSnapAlign: "start",
+                      background: "rgba(255,255,255,.3)",
+                      border: "1px solid rgba(255,255,255,.35)",
+                    }}
                     data-testid={`activity-card-${event.id}`}
                   >
-                    {/* Tag badge */}
-                    <div
-                      className="text-[10px] font-bold text-white px-2 py-1 rounded-full w-fit mb-2"
-                      style={{ background: tagColor }}
-                    >
-                      {event.category?.toUpperCase() ?? "EVENT"}
+                    {/* Top row: tag + time */}
+                    <div className="flex items-center justify-between mb-2.5">
+                      <span
+                        className="text-[10px] font-bold px-2.5 py-1 rounded-xl"
+                        style={{ background: tagStyle.bg, color: tagStyle.color, letterSpacing: ".5px" }}
+                      >
+                        {tagStyle.label}
+                      </span>
+                      <span className="text-[11px] font-medium" style={{ color: "rgba(255,255,255,.4)" }}>
+                        {eventTime}
+                      </span>
                     </div>
-                    {/* Time */}
-                    <p className="text-[12px] text-white/60 mb-1">{eventTime}</p>
                     {/* Title */}
-                    <p className="text-[15px] font-bold text-white mb-1 line-clamp-2">{event.title}</p>
+                    <p className="text-[15px] font-bold text-white mb-1 line-clamp-2 text-left">{event.title}</p>
                     {/* Location */}
                     {event.location && (
-                      <p className="text-[12px] text-white/35 mb-2 line-clamp-1">{event.location}</p>
+                      <p className="text-[12px] mb-2 line-clamp-1 text-left flex items-center gap-1" style={{ color: "rgba(255,255,255,.35)" }}>
+                        <MapPin size={10} />
+                        {event.location}
+                      </p>
                     )}
-                    {/* Member avatar + name */}
+                    {/* Member avatar + name with separator */}
                     {assignedMember && (
-                      <div className="flex items-center gap-2 mt-auto pt-2">
+                      <div className="flex items-center gap-1.5 mt-auto pt-2.5" style={{ borderTop: "1px solid rgba(255,255,255,.1)" }}>
                         <div
                           className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
                           style={{ backgroundColor: assignedMember.profile.colorHex || "var(--niva-indigo)" }}
                         >
                           {assignedMember.profile.name.charAt(0)}
                         </div>
-                        <span className="text-[11px] text-white/70">{assignedMember.profile.name.split(" ")[0]}</span>
+                        <span className="text-[12px] font-medium" style={{ color: "rgba(255,255,255,.5)" }}>{assignedMember.profile.name.split(" ")[0]}</span>
                       </div>
                     )}
                   </button>
@@ -617,23 +673,36 @@ export default function BriefingPage({ onNavigate }: BriefingPageProps) {
 
         {/* ── DA FARE (TASKS) ── */}
         {(tasks ?? []).filter(t => !t.completedAt).length > 0 && (
-          <div className="px-4 pb-4">
-            <h3 className="text-[17px] font-bold text-white mb-3">Da fare</h3>
-            <div className="flex gap-3 overflow-x-auto no-scrollbar" style={{ scrollSnapType: "x mandatory" }}>
+          <div>
+            <div className="flex items-center justify-between" style={{ padding: "20px 20px 12px" }}>
+              <h3 className="text-[17px] font-bold text-white">Da fare</h3>
+              <button onClick={() => onNavigate("tasks")} className="text-[13px] font-medium" style={{ color: "rgba(255,255,255,.5)" }}>
+                Vedi tutti
+              </button>
+            </div>
+            <div className="flex gap-3 overflow-x-auto no-scrollbar" style={{ scrollSnapType: "x mandatory", padding: "0 20px 20px" }}>
               {(tasks ?? []).filter(t => !t.completedAt).slice(0, 6).map(task => (
                 <button
                   key={task.id}
                   onClick={() => onNavigate("tasks")}
-                  className="glass-secondary rounded-[18px] p-3 flex-shrink-0 w-[200px] flex flex-col active:scale-95 transition-transform"
-                  style={{ scrollSnapAlign: "start" }}
+                  className="rounded-[18px] p-3.5 flex-shrink-0 w-[200px] flex flex-col active:scale-95 transition-transform"
+                  style={{
+                    scrollSnapAlign: "start",
+                    background: "rgba(255,255,255,.3)",
+                    border: "1px solid rgba(255,255,255,.35)",
+                  }}
                   data-testid={`task-card-${task.id}`}
                 >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Check size={14} className={task.completedAt ? "text-emerald-400" : "text-white/40"} />
+                  <div className="flex items-center gap-2.5 mb-2">
+                    {/* Checkbox box (mockup style) */}
+                    <div
+                      className="w-5 h-5 rounded-[6px] flex items-center justify-center flex-shrink-0"
+                      style={{ border: "2px solid rgba(255,255,255,.25)" }}
+                    />
                   </div>
-                  <p className="text-[13px] font-bold text-white line-clamp-2">{task.title}</p>
+                  <p className="text-[14px] font-semibold text-white line-clamp-2 text-left">{task.title}</p>
                   {task.description && (
-                    <p className="text-[11px] text-white/50 mt-1 line-clamp-1">{task.description}</p>
+                    <p className="text-[11px] mt-0.5 text-left" style={{ color: "rgba(255,255,255,.35)" }}>{task.description}</p>
                   )}
                 </button>
               ))}

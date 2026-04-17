@@ -424,14 +424,16 @@
 
 :root {
   --niva-gradient: linear-gradient(170deg,
-    #F2E6D4 0%,
-    #EDDDCA 12%,
-    #E8A87C 25%,
-    #E8537A 42%,
-    #D63384 55%,
-    #9B30B0 68%,
-    #4C5FD5 82%,
-    #2555C8 100%
+    #F5EDE3 0%,
+    #F0E2D2 10%,
+    #EDCCB0 20%,
+    #E8A87C 32%,
+    #E07A8A 45%,
+    #C94A80 55%,
+    #9B40A8 66%,
+    #6B5FCA 78%,
+    #4C5FD5 88%,
+    #3558C0 100%
   );
 
   /* Glass hierarchy */
