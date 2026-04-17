@@ -1,6 +1,7 @@
 import { db } from "../db";
 import { aiCache, aiInsights } from "@shared/schema";
 import { and, eq, desc } from "drizzle-orm";
+import { AI_TOOLS, executeTool, type ToolContext, type ToolDefinition } from "./tools";
 
 const CLAUDE_API = "https://api.anthropic.com/v1/messages";
 // Standard model for routine AI calls (summaries, suggestions, etc.)
@@ -108,6 +109,112 @@ export async function callClaudeConversation(
   }
 }
 
+/**
+ * Multi-turn conversation with tool use support.
+ * Handles the tool_use → tool_result loop automatically.
+ * Calls onDelta for text streaming, onToolUse when a tool is invoked.
+ * Returns the final text response after all tools have been executed.
+ */
+export async function callClaudeWithTools(
+  systemPrompt: string,
+  messages: Array<{ role: string; content: any }>,
+  toolCtx: ToolContext,
+  callbacks: {
+    onDelta?: (text: string) => void;
+    onToolUse?: (name: string, result: string) => void;
+  } = {},
+  maxTokens = 1200,
+): Promise<string | null> {
+  const apiKey = process.env.CLAUDE_API_KEY;
+  if (!apiKey) {
+    console.warn("[AI] CLAUDE_API_KEY not set — returning null");
+    return null;
+  }
+
+  const MAX_TOOL_ROUNDS = 5; // safety limit
+  let currentMessages = [...messages];
+
+  for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+
+    try {
+      const res = await fetch(CLAUDE_API, {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          max_tokens: maxTokens,
+          system: systemPrompt,
+          messages: currentMessages,
+          tools: AI_TOOLS,
+        }),
+      });
+
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        const err = await res.text();
+        console.error("[AI] Claude tools API error:", res.status, err);
+        return null;
+      }
+
+      const data = (await res.json()) as any;
+      const contentBlocks: any[] = data.content || [];
+      const stopReason = data.stop_reason;
+
+      // Extract text and tool_use blocks
+      let textParts: string[] = [];
+      let toolUseBlocks: any[] = [];
+
+      for (const block of contentBlocks) {
+        if (block.type === "text") {
+          textParts.push(block.text);
+          callbacks.onDelta?.(block.text);
+        } else if (block.type === "tool_use") {
+          toolUseBlocks.push(block);
+        }
+      }
+
+      // If no tool calls, we're done
+      if (stopReason !== "tool_use" || toolUseBlocks.length === 0) {
+        return textParts.join("");
+      }
+
+      // Execute all tools and build tool_result messages
+      const toolResults: any[] = [];
+      for (const toolBlock of toolUseBlocks) {
+        const result = await executeTool(toolBlock.name, toolBlock.input, toolCtx);
+        callbacks.onToolUse?.(toolBlock.name, result);
+        toolResults.push({
+          type: "tool_result",
+          tool_use_id: toolBlock.id,
+          content: result,
+        });
+      }
+
+      // Add assistant response + tool results to conversation
+      currentMessages.push({ role: "assistant", content: contentBlocks });
+      currentMessages.push({ role: "user", content: toolResults });
+
+    } catch (err: any) {
+      if (err.name === "AbortError") {
+        console.warn("[AI] Claude tools call timed out");
+        return null;
+      }
+      throw err;
+    }
+  }
+
+  console.warn("[AI] Max tool rounds reached");
+  return "Mi dispiace, ho raggiunto il limite di azioni per questa richiesta. Riprova con una richiesta più semplice.";
+}
+
 export async function callClaudeVision(
   prompt: string,
   imageBase64: string,
@@ -207,4 +314,72 @@ export async function saveInsight(
   metadata?: Record<string, unknown>,
 ): Promise<void> {
   await db.insert(aiInsights).values({ familyId, type, message, severity, metadata: metadata ?? null });
+}
+
+/**
+ * Stream-based conversation call to Claude API.
+ * Returns a ReadableStream of text deltas from the Claude API SSE response.
+ */
+export async function callClaudeConversationStream(
+  systemPrompt: string,
+  messages: Array<{ role: "user" | "assistant"; content: string }>,
+  maxTokens = 1200,
+  usePremium = false
+): Promise<ReadableStream<string> | null> {
+  const apiKey = process.env.CLAUDE_API_KEY;
+  if (!apiKey) {
+    console.warn("[AI] CLAUDE_API_KEY not set — returning null");
+    return null;
+  }
+
+  try {
+    const res = await fetch(CLAUDE_API, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: usePremium ? MODEL_PREMIUM : MODEL,
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages,
+        stream: true,
+      }),
+    });
+
+    if (!res.ok || !res.body) {
+      const err = await res.text();
+      console.error("[AI] Claude streaming API error:", res.status, err);
+      return null;
+    }
+
+    // Transform the SSE stream to extract just text deltas
+    return res.body.pipeThrough(new TextDecoderStream()).pipeThrough(
+      new TransformStream<string, string>({
+        transform(chunk, controller) {
+          // Parse SSE events from chunk
+          const lines = chunk.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') return;
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+                  controller.enqueue(parsed.delta.text);
+                }
+              } catch {
+                // Ignore parse errors for malformed JSON
+              }
+            }
+          }
+        }
+      })
+    );
+  } catch (err: any) {
+    console.error("[AI] Streaming error:", err);
+    return null;
+  }
 }

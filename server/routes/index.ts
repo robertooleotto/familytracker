@@ -2,7 +2,6 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import cors from "cors";
 import { authLimiter, strictAuthLimiter, apiLimiter, aiLimiter } from "../lib/routeHelpers";
-import { registerAuthRoutes } from "./auth";
 import { registerOnboardingRoutes } from "./onboarding";
 import { registerFamilyRoutes } from "./family";
 import { registerGeofencesRoutes } from "./geofences";
@@ -64,35 +63,21 @@ export async function registerRoutes(
 
   // Strict limiter on the highest-risk auth endpoints (5 req/min/IP).
   // Mounted BEFORE the generic authLimiter so both apply: 5/min AND 20/15min.
-  app.use("/api/auth/login", strictAuthLimiter);
-  app.use("/api/auth/register", strictAuthLimiter);
-  app.use("/api/auth/reset-password", strictAuthLimiter);
-  app.use("/api/auth/forgot-password", strictAuthLimiter);
+  app.use("/api/auth/v2/register", strictAuthLimiter);
+  app.use("/api/auth/v2/join", strictAuthLimiter);
 
   app.use("/api/auth", authLimiter);
   app.use("/api/ai", aiLimiter);
   app.use("/api", apiLimiter);
 
-  // ─── REGISTER ALL DOMAIN-SPECIFIC ROUTES ──────────────────────────────────
-  registerAuthRoutes(app);
-
-  // ─── SUPABASE AUTH v2 (FEATURE-FLAGGED) ───────────────────────────────────
-  // Mounted only when SUPABASE_AUTH_ENABLED=true and the supabase env vars
-  // are present. Loaded via dynamic import so the app boots even if
-  // @supabase/supabase-js isn't installed yet (e.g. on a fresh CI clone
-  // before npm install runs).
-  if (
-    process.env.SUPABASE_AUTH_ENABLED === "true" &&
-    process.env.SUPABASE_URL &&
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  ) {
-    try {
-      const { registerSupabaseAuthRoutes } = await import("./auth-supabase");
-      registerSupabaseAuthRoutes(app);
-      console.log("[routes] Supabase Auth v2 routes mounted at /api/auth/v2/*");
-    } catch (err) {
-      console.error("[routes] Failed to load Supabase Auth v2 routes:", err);
-    }
+  // ─── SUPABASE AUTH (ONLY AUTH SYSTEM) ─────────────────────────────────
+  // Always mount Supabase Auth routes. This is the only auth system now.
+  try {
+    const { registerSupabaseAuthRoutes } = await import("./auth-supabase");
+    registerSupabaseAuthRoutes(app);
+    console.log("[routes] Supabase Auth routes mounted at /api/auth/v2/*");
+  } catch (err) {
+    console.error("[routes] Failed to load Supabase Auth routes:", err);
   }
 
   registerOnboardingRoutes(app);

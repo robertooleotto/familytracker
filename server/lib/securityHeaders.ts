@@ -34,12 +34,9 @@ export interface SecurityHeadersOptions {
 
 const DEFAULT_PERMISSIONS_POLICY = [
   "accelerometer=()",
-  "ambient-light-sensor=()",
   "autoplay=()",
-  "battery=()",
   "camera=(self)",
   "display-capture=()",
-  "document-domain=()",
   "encrypted-media=()",
   "fullscreen=(self)",
   "geolocation=(self)",
@@ -74,16 +71,24 @@ export function securityHeaders(options: SecurityHeadersOptions = {}) {
   // Allow WebSocket connections back to ourselves (for the wsServer).
   connectSrc.push("ws:", "wss:");
 
+  // CDN origins used by the app at runtime:
+  //   fonts.googleapis.com / fonts.gstatic.com — Google Fonts
+  //   unpkg.com           — Leaflet CSS
+  //   cdn.jsdelivr.net    — DotLottie WASM player
+  const trustedStyleSrc = "https://fonts.googleapis.com https://unpkg.com";
+  const trustedFontSrc = "https://fonts.gstatic.com";
+  const trustedConnectSrc = "https://cdn.jsdelivr.net https://unpkg.com";
+
   const csp = [
     "default-src 'self'",
     "base-uri 'self'",
     "frame-ancestors 'none'",
     "form-action 'self'",
     "img-src 'self' data: blob: https:",
-    "font-src 'self' data: https:",
-    "style-src 'self' 'unsafe-inline'", // Tailwind generates inline styles.
+    `font-src 'self' data: https: ${trustedFontSrc}`,
+    `style-src 'self' 'unsafe-inline' ${trustedStyleSrc}`,
     "script-src 'self'",
-    `connect-src ${connectSrc.join(" ")}`,
+    `connect-src ${connectSrc.join(" ")} ${trustedConnectSrc}`,
     "object-src 'none'",
     "upgrade-insecure-requests",
   ].join("; ");
