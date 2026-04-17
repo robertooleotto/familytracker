@@ -379,7 +379,7 @@ function ViewDocDialog({ doc, section, ownerName, myProfileId, onClose }: {
     if (!doc) return;
     try {
       // Step 1: ask the API for a fresh signed download URL.
-      const r = await fetch(`/api/documents/${doc.id}`, { headers: await getAuthHeaders() });
+      const r = await fetch(`/api/documents/${doc.id}`, { headers: getAuthHeaders() });
       if (!r.ok) throw new Error("Errore download");
       const meta = await r.json();
       if (!meta.downloadUrl) throw new Error("Documento senza file");
@@ -466,8 +466,8 @@ export default function DocumentiPage() {
   const { data: members = [] } = useQuery<Profile[]>({ queryKey: ["/api/family/profiles"] });
   const { data: docs = [], isLoading } = useQuery<Doc[]>({
     queryKey: ["/api/documents", activeTab],
-    queryFn: async () => fetch(`/api/documents?section=${activeTab}`, {
-      headers: await getAuthHeaders(),
+    queryFn: () => fetch(`/api/documents?section=${activeTab}`, {
+      headers: getAuthHeaders(),
     }).then(r => r.json()),
   });
 

@@ -19,9 +19,8 @@ export async function apiRequest(
   url: string,
   data?: unknown,
 ): Promise<Response> {
-  const authHeaders = await getAuthHeaders();
   const headers: Record<string, string> = {
-    ...authHeaders,
+    ...getAuthHeaders(),
   };
   if (data !== undefined) {
     headers["Content-Type"] = "application/json";
@@ -46,7 +45,7 @@ export const getQueryFn: <T>(options: {
       ? queryKey.filter(Boolean).join("/")
       : String(queryKey);
     const res = await fetch(url, {
-      headers: await getAuthHeaders(),
+      headers: getAuthHeaders(),
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
