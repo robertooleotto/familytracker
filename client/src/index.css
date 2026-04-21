@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Serif:ital@0;1&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -38,10 +40,59 @@
 }
 
 /*
-  KINLY — Design Tokens · Palette A Coral/Navy
-  Primario: Coral #E8533A  |  Surface: Navy #1A2535
-  Tutti i colori Tailwind mappati su questa palette.
+  KINLY — Design Tokens v2 · Palette Warm Coral/Navy
+  Primario: Coral #E1553C  |  Surface: Navy #15202E
+  Tipografia: Inter Tight + Instrument Serif (editoriale)
 */
+
+/* ── Kinly raw tokens ── */
+:root {
+  --k-paper:        #FAF7F2;
+  --k-paper-2:      #F3EEE6;
+  --k-ink:          #15202E;
+  --k-ink-2:        #4C5A6B;
+  --k-ink-3:        #8896A8;
+  --k-line:         #E8E2D6;
+  --k-line-2:       #D3CABA;
+  --k-card:         #FFFFFF;
+
+  --k-coral:        #E1553C;
+  --k-coral-ink:    #9C2E1B;
+  --k-coral-soft:   #FCEBE3;
+  --k-coral-tint:   #F7D2C3;
+
+  --k-navy:         #15202E;
+  --k-navy-2:       #26354A;
+  --k-navy-3:       #435065;
+
+  --k-sage:         #6B8A6E;
+  --k-sage-soft:    #E3EBE0;
+  --k-ochre:        #C78A3E;
+  --k-ochre-soft:   #F5E8D0;
+  --k-plum:         #7C4A6A;
+  --k-plum-soft:    #EDDDE5;
+  --k-steel:        #4A6B8A;
+  --k-steel-soft:   #DBE4EC;
+  --k-leaf:         #3F7A4E;
+  --k-leaf-soft:    #DCEAD8;
+
+  --k-ok:           #2E7D32;
+  --k-warn:         #B8590E;
+  --k-err:          #B83A23;
+
+  --k-sh-1: 0 1px 2px rgba(21,32,46,.04), 0 1px 1px rgba(21,32,46,.03);
+  --k-sh-2: 0 2px 6px rgba(21,32,46,.05), 0 1px 2px rgba(21,32,46,.03);
+  --k-sh-3: 0 6px 18px rgba(21,32,46,.07), 0 2px 6px rgba(21,32,46,.04);
+  --k-sh-4: 0 18px 42px rgba(21,32,46,.10), 0 4px 12px rgba(21,32,46,.06);
+  --k-sh-coral: 0 8px 24px rgba(225,85,60,.28);
+
+  --k-r-xs: 6px;  --k-r-sm: 10px; --k-r-md: 14px;
+  --k-r-lg: 20px; --k-r-xl: 28px; --k-r-pill: 999px;
+
+  --k-sans:    "Inter Tight", "SF Pro Text", system-ui, sans-serif;
+  --k-serif:   "Instrument Serif", Georgia, serif;
+  --k-mono:    "JetBrains Mono", "SF Mono", Menlo, monospace;
+}
 
 /* LIGHT MODE */
 :root {
@@ -51,12 +102,12 @@
   --elevate-1: rgba(26,37,53, .04);
   --elevate-2: rgba(26,37,53, .09);
 
-  /* Background — caldo #F7F5F2 */
-  --background:             36 24% 96%;
-  --foreground:             216 34% 15%;
+  /* Background — warm paper #FAF7F2 */
+  --background:             36 33% 97%;
+  --foreground:             213 37% 13%;
 
-  /* Border — caldo #E8E6E1 */
-  --border:                 45 14% 90%;
+  /* Border — warm #E8E2D6 */
+  --border:                 40 22% 88%;
 
   /* Card — bianco puro */
   --card:                   0 0% 100%;
@@ -78,8 +129,8 @@
   --popover-foreground:     216 34% 15%;
   --popover-border:         40 22% 92%;
 
-  /* Primary — Coral #E8533A */
-  --primary:                9 79% 57%;
+  /* Primary — Coral #E1553C */
+  --primary:                9 74% 55%;
   --primary-foreground:     0 0% 100%;
 
   /* Secondary — grouped bg #EEEBE6 */
@@ -112,9 +163,9 @@
   --chart-5:                212 80% 42%;
 
   /* Typography */
-  --font-sans:  "DM Sans", "Inter", "Open Sans", sans-serif;
-  --font-serif: Georgia, serif;
-  --font-mono:  Menlo, monospace;
+  --font-sans:  "Inter Tight", "DM Sans", "SF Pro Text", system-ui, sans-serif;
+  --font-serif: "Instrument Serif", Georgia, serif;
+  --font-mono:  "JetBrains Mono", "SF Mono", Menlo, monospace;
 
   /* Radius */
   --radius: .75rem;
@@ -149,29 +200,29 @@
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 
   /* ── Kinly semantic tokens (per CSS var diretti) ── */
-  --color-primary:          #E8533A;
-  --color-primary-dark:     #B83A23;
-  --color-primary-darker:   #8A2515;
-  --color-primary-light:    #FEF0ED;
-  --color-primary-lighter:  #FDD5CB;
+  --color-primary:          #E1553C;
+  --color-primary-dark:     #9C2E1B;
+  --color-primary-darker:   #7A1E0F;
+  --color-primary-light:    #FCEBE3;
+  --color-primary-lighter:  #F7D2C3;
 
-  --color-surface:          #1A2535;
-  --color-surface-mid:      #2D3D52;
-  --color-surface-light:    #3D5268;
+  --color-surface:          #15202E;
+  --color-surface-mid:      #26354A;
+  --color-surface-light:    #435065;
 
-  --color-bg:               #F7F5F2;
+  --color-bg:               #FAF7F2;
   --color-bg-elevated:      #FFFFFF;
-  --color-bg-grouped:       #EEEBE6;
+  --color-bg-grouped:       #F3EEE6;
 
-  --color-text-primary:     #1A2535;
-  --color-text-secondary:   #4A5568;
+  --color-text-primary:     #15202E;
+  --color-text-secondary:   #4C5A6B;
   --color-text-tertiary:    #8896A8;
   --color-text-disabled:    #C0C8D4;
   --color-text-inverse:     #FFFFFF;
 
-  --color-border:           #E8E6E1;
-  --color-border-strong:    #C8C5BE;
-  --color-border-focus:     #E8533A;
+  --color-border:           #E8E2D6;
+  --color-border-strong:    #D3CABA;
+  --color-border-focus:     #E1553C;
 
   --color-success:          #2E7D32;
   --color-success-bg:       #E8F5E9;
@@ -189,7 +240,19 @@
   --color-member-5:         #E65100;
   --color-member-6:         #00838F;
 
-  --shadow-primary:         0 4px 18px rgba(232,83,58,.32);
+  /* ── Kinly utility module colors ── */
+  --color-sage:             #6B8A6E;
+  --color-sage-soft:        #E3EBE0;
+  --color-ochre:            #C78A3E;
+  --color-ochre-soft:       #F5E8D0;
+  --color-plum:             #7C4A6A;
+  --color-plum-soft:        #EDDDE5;
+  --color-steel:            #4A6B8A;
+  --color-steel-soft:       #DBE4EC;
+  --color-leaf:             #3F7A4E;
+  --color-leaf-soft:        #DCEAD8;
+
+  --shadow-primary:         0 8px 24px rgba(225,85,60,.28);
 
   --transition-fast:        all .12s cubic-bezier(.4,0,.2,1);
   --transition-normal:      all .20s cubic-bezier(.4,0,.2,1);
@@ -335,6 +398,21 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    font-feature-settings: "ss01", "cv11";
+    letter-spacing: -0.005em;
+  }
+
+  /* Kinly serif accent utility */
+  .k-serif {
+    font-family: var(--k-serif);
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+  .k-mono {
+    font-family: var(--k-mono);
+    font-size: 11px;
+    letter-spacing: 0.02em;
   }
 }
 

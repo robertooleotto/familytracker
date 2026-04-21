@@ -80,63 +80,63 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 }
 import {
-  LayoutDashboard, MapPin, MessageCircle, Calendar, ShoppingCart,
-  Shield, Pill, Home, Star, Settings, X, Wallet, Menu,
+  MapPin, MessageCircle, Calendar, ShoppingCart,
+  Shield, Pill, Home, Star, Settings, X, Wallet, Grid3x3,
   PawPrint, Car, Phone, UtensilsCrossed, Sparkles, GraduationCap, ShieldCheck, ChefHat, FolderOpen, Heart, BookOpen, Map, Bot, LogOut,
 } from "lucide-react";
 
+// 5 tab: Home · Agenda · Kinly(centro) · Mappa · Chat
 const MAIN_TABS = [
-  { id: "briefing", label: "Home",   icon: Sparkles },
+  { id: "briefing", label: "Home",   icon: Home },
+  { id: "calendar", label: "Agenda", icon: Calendar },
+  { id: "aichat",   label: "Kinly",  icon: Sparkles, center: true },
   { id: "map",      label: "Mappa",  icon: MapPin },
   { id: "chat",     label: "Chat",   icon: MessageCircle },
-  { id: "calendar", label: "Agenda", icon: Calendar },
-  { id: "more",     label: "Altro",  icon: Menu },
 ];
 
 const MORE_SECTIONS = [
   {
-    title: "📔 Giornale",
+    title: "Giornale",
     items: [
-      { id: "giornale",  label: "Giornale",       icon: BookOpen,     color: "#E8533A" },
-      { id: "diario",    label: "Diario Percorsi", icon: Map,          color: "#3B82F6" },
+      { id: "giornale",  label: "Giornale",       icon: BookOpen,     color: "var(--k-coral)",  soft: "var(--k-coral-soft)" },
+      { id: "diario",    label: "Diario Percorsi", icon: Map,          color: "var(--k-steel)",  soft: "var(--k-steel-soft)" },
     ],
   },
   {
-    title: "📅 Pianificazione",
+    title: "Pianificazione",
     items: [
-      { id: "calendar",  label: "Agenda",        icon: Calendar,     color: "#8B5CF6" },
-      { id: "tasks",     label: "Compiti",        icon: Star,         color: "#F59E0B" },
-      { id: "deadlines", label: "Scadenze casa",  icon: Home,         color: "#8B5CF6" },
-      { id: "contacts",  label: "Contatti casa",  icon: Phone,        color: "#10B981" },
+      { id: "calendar",  label: "Agenda",         icon: Calendar,     color: "var(--k-navy)",   soft: "var(--k-paper-2)" },
+      { id: "tasks",     label: "Compiti",         icon: Star,         color: "var(--k-ochre)",  soft: "var(--k-ochre-soft)" },
+      { id: "deadlines", label: "Scadenze casa",   icon: Home,         color: "var(--k-ochre)",  soft: "var(--k-ochre-soft)" },
+      { id: "contacts",  label: "Contatti casa",   icon: Phone,        color: "var(--k-sage)",   soft: "var(--k-sage-soft)" },
     ],
   },
   {
-    title: "🛒 Spesa & Finanze",
+    title: "Spesa & Finanze",
     items: [
-      { id: "shopping",  label: "Lista spesa",    icon: ShoppingCart, color: "#10B981" },
-      { id: "budget",    label: "Budget + Conto", icon: Wallet,       color: "#3B82F6" },
-      { id: "documenti", label: "Documenti",      icon: FolderOpen,   color: "#0EA5E9" },
+      { id: "shopping",  label: "Lista spesa",    icon: ShoppingCart, color: "var(--k-sage)",   soft: "var(--k-sage-soft)" },
+      { id: "budget",    label: "Budget + Conto", icon: Wallet,       color: "var(--k-steel)",  soft: "var(--k-steel-soft)" },
+      { id: "documenti", label: "Documenti",      icon: FolderOpen,   color: "var(--k-steel)",  soft: "var(--k-steel-soft)" },
     ],
   },
   {
-    title: "🏡 Casa & Vita quotidiana",
+    title: "Casa & Vita quotidiana",
     items: [
-      { id: "dinner",    label: "Chi cucina",     icon: UtensilsCrossed, color: "#F97316" },
-      { id: "cucina",    label: "Cucina AI",      icon: ChefHat,         color: "#EA580C" },
-      { id: "pets",      label: "Animali",        icon: PawPrint,        color: "#F59E0B" },
-      { id: "vehicles",  label: "Veicoli",        icon: Car,             color: "#3B82F6" },
-      { id: "meds",      label: "Farmaci",        icon: Pill,            color: "#EF4444" },
-      { id: "geofences", label: "Zone sicure",    icon: Shield,          color: "#06B6D4" },
+      { id: "dinner",    label: "Chi cucina",     icon: UtensilsCrossed, color: "var(--k-coral)",  soft: "var(--k-coral-soft)" },
+      { id: "cucina",    label: "Cucina AI",      icon: ChefHat,         color: "var(--k-coral)",  soft: "var(--k-coral-soft)" },
+      { id: "pets",      label: "Animali",        icon: PawPrint,        color: "var(--k-ochre)",  soft: "var(--k-ochre-soft)" },
+      { id: "vehicles",  label: "Veicoli",        icon: Car,             color: "var(--k-steel)",  soft: "var(--k-steel-soft)" },
+      { id: "meds",      label: "Farmaci",        icon: Pill,            color: "var(--k-plum)",   soft: "var(--k-plum-soft)" },
+      { id: "geofences", label: "Zone sicure",    icon: Shield,          color: "var(--k-leaf)",   soft: "var(--k-leaf-soft)" },
     ],
   },
   {
-    title: "🛡️ Sicurezza & Scuola",
+    title: "Sicurezza & Scuola",
     items: [
-      { id: "elderly",         label: "Sicurezza anziani", icon: Heart,         color: "#EF4444" },
-      { id: "smartprotection", label: "Protezione smart",  icon: ShieldCheck,   color: "#10B981" },
-      { id: "school",          label: "Registri scuola",   icon: GraduationCap, color: "#0EA5E9" },
-      { id: "ai",              label: "AI Predittiva",     icon: Sparkles,      color: "#8B5CF6" },
-      { id: "aichat",          label: "Assistente AI",     icon: Bot,           color: "#2563EB" },
+      { id: "elderly",         label: "Sicurezza anziani", icon: Heart,         color: "var(--k-plum)",  soft: "var(--k-plum-soft)" },
+      { id: "smartprotection", label: "Protezione smart",  icon: ShieldCheck,   color: "var(--k-leaf)",  soft: "var(--k-leaf-soft)" },
+      { id: "school",          label: "Registri scuola",   icon: GraduationCap, color: "var(--k-steel)", soft: "var(--k-steel-soft)" },
+      { id: "ai",              label: "AI Predittiva",     icon: Sparkles,      color: "var(--k-coral)", soft: "var(--k-coral-soft)" },
     ],
   },
 ];
@@ -202,30 +202,32 @@ function MoreSheet({ onSelect, onClose, onLogout }: { onSelect: (id: string) => 
       onClick={handleClose}
     >
       <div
-        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl overflow-hidden"
+        className="absolute bottom-0 left-0 right-0 overflow-hidden"
         style={{
+          background: "var(--k-paper)",
+          borderRadius: "var(--k-r-xl) var(--k-r-xl) 0 0",
           transform: visible ? "translateY(0)" : "translateY(100%)",
           transition: "transform 0.32s cubic-bezier(0.32, 0.72, 0, 1)",
           maxHeight: "84vh",
-          boxShadow: "0 -4px 40px rgba(0,0,0,0.18)",
+          boxShadow: "0 -4px 40px rgba(21,32,46,0.14)",
         }}
         onClick={e => e.stopPropagation()}
       >
         {/* Handle bar */}
         <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 bg-slate-200 rounded-full" />
+          <div style={{ width: 40, height: 4, background: "var(--k-line-2)", borderRadius: 999 }} />
         </div>
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3">
-          <h3 className="font-bold text-base text-slate-900">Funzionalità</h3>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--k-ink)", letterSpacing: "-0.01em" }}>Funzionalità</h3>
           <button
             onClick={handleClose}
-            className="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center active:bg-slate-200 transition-colors"
+            style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--k-paper-2)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--k-line)" }}
             data-testid="button-close-more"
             aria-label="Chiudi menu"
           >
-            <X className="w-4 h-4 text-slate-600" />
+            <X className="w-4 h-4" style={{ color: "var(--k-ink-2)" }} />
           </button>
         </div>
 
@@ -233,50 +235,52 @@ function MoreSheet({ onSelect, onClose, onLogout }: { onSelect: (id: string) => 
         <div className="overflow-y-auto pb-4 px-4" style={{ maxHeight: "calc(84vh - 80px)" }}>
           {MORE_SECTIONS.map(section => (
             <div key={section.title} className="mb-5">
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-2 px-1">{section.title}</p>
-              <div className="grid grid-cols-2 gap-2.5">
-                {section.items.map(({ id, label, icon: Icon, color }) => (
+              <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--k-ink-3)", marginBottom: 8, paddingLeft: 4 }}>{section.title}</p>
+              <div className="grid grid-cols-2 gap-2">
+                {section.items.map(({ id, label, icon: Icon, color, soft }) => (
                   <button
                     key={id}
                     onClick={() => handleSelect(id)}
-                    className="flex items-center gap-3 p-3.5 rounded-2xl text-left active:scale-95 transition-transform"
-                    style={{ background: `${color}12`, border: `1px solid ${color}22` }}
+                    className="flex items-center gap-3 text-left active:scale-95 transition-transform"
+                    style={{ background: soft, border: `1px solid rgba(21,32,46,0.06)`, borderRadius: "var(--k-r-md)", padding: "12px 14px" }}
                     data-testid={`more-nav-${id}`}
                   >
                     <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: `${color}20` }}
+                      className="flex items-center justify-center flex-shrink-0"
+                      style={{ width: 36, height: 36, borderRadius: "var(--k-r-sm)", background: "rgba(255,255,255,0.7)" }}
                     >
-                      <Icon className="w-[18px] h-[18px]" style={{ color }} />
+                      <Icon className="w-[17px] h-[17px]" style={{ color }} />
                     </div>
-                    <span className="text-[13px] font-semibold text-slate-800 leading-tight">{label}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--k-ink)", lineHeight: 1.2 }}>{label}</span>
                   </button>
                 ))}
               </div>
             </div>
           ))}
 
-          {/* Impostazioni e Logout — separati in fondo */}
-          <div className="border-t border-slate-100 pt-3 pb-4 space-y-2">
+          {/* Impostazioni e Logout */}
+          <div style={{ borderTop: "1px solid var(--k-line)", paddingTop: 12, paddingBottom: 16, display: "flex", flexDirection: "column", gap: 8 }}>
             <button
               onClick={() => handleSelect("settings")}
-              className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-left active:scale-95 transition-transform bg-slate-50 border border-slate-100"
+              className="w-full flex items-center gap-3 text-left active:scale-95 transition-transform"
+              style={{ background: "var(--k-paper-2)", border: "1px solid var(--k-line)", borderRadius: "var(--k-r-md)", padding: "12px 14px" }}
               data-testid="more-nav-settings"
             >
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-slate-200">
-                <Settings className="w-[18px] h-[18px] text-slate-500" />
+              <div style={{ width: 36, height: 36, borderRadius: "var(--k-r-sm)", background: "rgba(255,255,255,0.7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Settings className="w-[17px] h-[17px]" style={{ color: "var(--k-ink-2)" }} />
               </div>
-              <span className="text-[13px] font-semibold text-slate-600">Impostazioni</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--k-ink-2)" }}>Impostazioni</span>
             </button>
             <button
               onClick={() => { haptics.tap(); setVisible(false); setTimeout(() => { onLogout(); onClose(); }, 220); }}
-              className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-left active:scale-95 transition-transform bg-red-50 border border-red-100"
+              className="w-full flex items-center gap-3 text-left active:scale-95 transition-transform"
+              style={{ background: "#FFF0EE", border: "1px solid #FDDAD5", borderRadius: "var(--k-r-md)", padding: "12px 14px" }}
               data-testid="more-nav-logout"
             >
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-red-100">
-                <LogOut className="w-[18px] h-[18px] text-red-500" />
+              <div style={{ width: 36, height: 36, borderRadius: "var(--k-r-sm)", background: "rgba(255,255,255,0.7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <LogOut className="w-[17px] h-[17px]" style={{ color: "var(--k-coral-ink)" }} />
               </div>
-              <span className="text-[13px] font-semibold text-red-600">Esci dall'account</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--k-coral-ink)" }}>Esci dall'account</span>
             </button>
           </div>
         </div>
@@ -304,53 +308,74 @@ function BottomNav({
 
   return (
     <nav
-      className="flex items-center justify-around flex-shrink-0 niva-nav"
+      className="flex-shrink-0 flex items-end justify-around"
       style={{
-        padding: "8px 16px 10px",
-        paddingBottom: `max(10px, env(safe-area-inset-bottom, 10px))`,
+        background: "rgba(255,255,255,0.92)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderTop: "1px solid var(--k-line)",
+        padding: "10px 20px",
+        paddingBottom: `max(22px, env(safe-area-inset-bottom, 22px))`,
       }}
     >
-      {MAIN_TABS.map(({ id, label, icon: Icon }) => {
+      {MAIN_TABS.map(({ id, label, icon: Icon, center }: any) => {
         const isActive = activeId === id;
         const isPressed = pressedId === id;
+
+        if (center) {
+          // Centro Kinly FAB
+          return (
+            <button
+              key={id}
+              onClick={() => handleClick(id)}
+              className="flex flex-col items-center gap-1"
+              style={{
+                marginTop: -22,
+                transform: isPressed ? "scale(0.9)" : "scale(1)",
+                transition: "transform 0.14s cubic-bezier(0.34,1.56,0.64,1)",
+                border: "none",
+                background: "none",
+                cursor: "pointer",
+              }}
+              data-testid={`nav-${id}`}
+            >
+              <div style={{
+                width: 56, height: 56, borderRadius: "50%",
+                background: "var(--k-coral)",
+                boxShadow: "var(--k-sh-coral)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Icon className="w-[22px] h-[22px]" style={{ color: "#fff" }} strokeWidth={1.8} />
+              </div>
+              <span style={{ fontSize: 10, fontWeight: 600, color: isActive ? "var(--k-coral)" : "var(--k-ink-3)" }}>
+                {label}
+              </span>
+            </button>
+          );
+        }
+
+        const color = isActive ? "var(--k-coral)" : "var(--k-ink-3)";
         return (
           <button
             key={id}
             onClick={() => handleClick(id)}
-            className="relative flex flex-col items-center gap-[3px]"
+            className="flex flex-col items-center gap-1"
             style={{
-              padding: "4px 14px",
               transform: isPressed ? "scale(0.88)" : "scale(1)",
               transition: "transform 0.12s cubic-bezier(0.34,1.56,0.64,1)",
-              background: "none",
               border: "none",
+              background: "none",
               cursor: "pointer",
+              minWidth: 44,
             }}
             data-testid={`nav-${id}`}
           >
-            {/* Active dot above icon */}
-            {isActive && (
-              <span
-                className="absolute top-0 left-1/2 -translate-x-1/2 rounded-full"
-                style={{ width: "4px", height: "4px", background: "#fff" }}
-              />
-            )}
             <Icon
-              className="w-5 h-5"
-              strokeWidth={isActive ? 2 : 1.6}
-              style={{
-                color: isActive ? "#fff" : "rgba(255,255,255,.3)",
-                transition: "color 0.15s",
-              }}
+              className="w-[22px] h-[22px]"
+              strokeWidth={isActive ? 2.2 : 1.6}
+              style={{ color, transition: "color 0.15s" }}
             />
-            <span
-              className="text-[10px]"
-              style={{
-                color: isActive ? "#fff" : "rgba(255,255,255,.3)",
-                fontWeight: isActive ? 600 : 400,
-                transition: "color 0.15s",
-              }}
-            >
+            <span style={{ fontSize: 10, fontWeight: isActive ? 600 : 500, color, transition: "color 0.15s" }}>
               {label}
             </span>
           </button>
@@ -383,12 +408,12 @@ function MainApp() {
     }
   }, []);
 
-  const mainTabIds = MAIN_TABS.slice(0, 4).map(t => t.id);
+  const mainTabIds = MAIN_TABS.map(t => t.id);
   const isMainTab = mainTabIds.includes(activeTab);
-  const activeNavId = isMainTab ? activeTab : "more";
+  // For secondary pages opened from MoreSheet, keep "briefing" highlighted
+  const activeNavId = isMainTab ? activeTab : "briefing";
 
   const handleNavClick = (id: string) => {
-    if (id === "more") { setShowMore(true); return; }
     setActiveTab(id);
   };
 
@@ -403,7 +428,7 @@ function MainApp() {
 
   if (profile && !profile.onboardingCompleted) {
     return (
-      <div className="flex flex-col h-screen max-w-md mx-auto overflow-hidden shadow-2xl relative niva-bg">
+      <div className="flex flex-col h-screen max-w-md mx-auto overflow-hidden shadow-2xl relative" style={{ background: "var(--k-paper)" }}>
         <OnboardingPage
           profile={profile}
           token={token || ""}
@@ -415,26 +440,50 @@ function MainApp() {
 
   return (
     <AuthContext.Provider value={{ profile, token, isAuthenticated, login, logout }}>
-      <div className="flex flex-col h-screen max-w-md mx-auto overflow-hidden shadow-2xl relative niva-bg">
+      <div className="flex flex-col h-screen max-w-md mx-auto overflow-hidden shadow-2xl relative" style={{ background: "var(--k-paper)" }}>
 
         {/* ── Top header (all tabs except briefing) ── */}
         {activeTab !== "briefing" && (
           <header
-            className="flex items-center justify-between px-4 py-3 flex-shrink-0"
-            style={{ background: "rgba(0,0,0,.15)" }}
+            className="flex items-center justify-between flex-shrink-0"
+            style={{
+              background: "var(--k-paper)",
+              borderBottom: "1px solid var(--k-line)",
+              padding: "12px 16px",
+              paddingTop: `max(12px, calc(env(safe-area-inset-top, 0px) + 12px))`,
+            }}
           >
-            <div className="flex items-center gap-2.5">
-              <div
-                className="w-7 h-7 rounded-lg flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg,#E8533A,#9B30B0)" }}
-              >
-                <span className="text-white text-[10px] font-black">FT</span>
-              </div>
-              <span className="font-bold text-[15px] text-white">{PAGE_TITLES[activeTab] || "FamilyTracker"}</span>
-            </div>
+            {/* Left: Grid3x3 → MoreSheet */}
             <button
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold active:scale-90 transition-transform"
-              style={{ backgroundColor: profile?.colorHex || "#E8533A" }}
+              onClick={() => { haptics.tap(); setShowMore(true); }}
+              style={{
+                width: 40, height: 40, borderRadius: "var(--k-r-sm)",
+                background: "var(--k-paper-2)", border: "1px solid var(--k-line)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer",
+              }}
+              data-testid="button-header-menu"
+              aria-label="Menu"
+            >
+              <Grid3x3 className="w-[18px] h-[18px]" style={{ color: "var(--k-ink-2)" }} />
+            </button>
+
+            {/* Center: page title */}
+            <span style={{ fontSize: 15, fontWeight: 700, color: "var(--k-ink)", letterSpacing: "-0.015em" }}>
+              {PAGE_TITLES[activeTab] || "Kinly"}
+            </span>
+
+            {/* Right: avatar → settings */}
+            <button
+              className="flex items-center justify-center active:scale-90 transition-transform"
+              style={{
+                width: 40, height: 40, borderRadius: "50%",
+                background: profile?.colorHex || "var(--k-coral)",
+                color: "#fff", fontSize: 14, fontWeight: 700,
+                border: "2px solid var(--k-paper)",
+                boxShadow: "var(--k-sh-2)",
+                cursor: "pointer",
+              }}
               onClick={() => { haptics.tap(); setActiveTab("settings"); }}
               data-testid="button-header-avatar"
             >
